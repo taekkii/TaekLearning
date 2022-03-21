@@ -1,12 +1,9 @@
 
 from . import parser
-
 from ..task import Task
 
 import dataset
 
-
-import argparse
 
 class ClassificationTask(Task):
     
