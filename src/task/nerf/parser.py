@@ -12,12 +12,10 @@ def set_parser(cls,parser:argparse.ArgumentParser):
 
     parser.add_argument('--save','-s',
                         action='store_true',
-                        help="Use this flag to save the model after train. Mostly likely to meaningless if you are not using the script to train a model")
+                        help="Use this flag to save the model after train. Mostly likely meaningless if you are not using the script to train a model")
 
     parser.add_argument('--load','-l',
-                        type='str',
+                        type=str,
                         help='PATH at which your model is saved.')
 
-        
-
-        
+    parser.add_argument('--train')
