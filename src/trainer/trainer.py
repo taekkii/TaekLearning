@@ -22,13 +22,12 @@ class Trainer:
         def __init__(self,net:Union[nn.Module,nn.parallel.DataParallel],
                           optimizer:Union[str,optim.Optimizer],
                           lr_scheduler:Union[str,optim.lr_scheduler._LRScheduler],
-                          obj_func:Callable,
                           hyperparam:dict):
             self.net = net
             self.optimizer = optimizer
             self.lr_scheduler = lr_scheduler
-            self.obj_func = obj_func
             self.hyperparam = hyperparam
+
 
         def prepare(self):
             
@@ -38,18 +37,22 @@ class Trainer:
             if isinstance(self.lr_scheduler,str):
                 self.lr_scheduler = lrscheduler.get_lr_scheduler(self.net,self.lr_scheduler,self.hyperparam)
         
+
+
         def get_lr(self):
             return self.optimizer.param_groups[0]['lr']
         
-        def forward_and_backward(self,*input,target:Optional[torch.Tensor],optimizer_step=True,lr_scheduler_step=True):
+
+
+        def forward_and_backward(self,*input,target:Optional[torch.Tensor],obj_func:Callable,optimizer_step=True,lr_scheduler_step=True):
             
             self.net.train()
 
             output = self.net(*input)
             if target is not None:
-                loss = self.obj_func(output,target)
+                loss = obj_func(output,target)
             else:
-                loss = self.obj_func(output)
+                loss = obj_func(output)
             
             loss.backward()
             
@@ -82,7 +85,7 @@ class Trainer:
         
         self.elapsed_second = 0
         self.time0 = time.time()
-
+        
     def welcome(self):
         pass
 
