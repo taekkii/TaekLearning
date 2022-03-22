@@ -30,14 +30,12 @@ def _default_args(parser):
                         help = '[Required] Device(s) for run')
 
     parser.add_argument('--dataset', '-ds',
-                        type=list,
-                        default=[],
+                        nargs='+',
                         help='''(Dictionary-like-form of) Dataset(s)
                                 Ex) --dataset "CIFAR10 transform=tf0" ''')
     
     parser.add_argument('--model' , '-m',
-                        type=list,
-                        default=[],
+                        nargs='+',
                         help='''(Dictionary-like-form of) model and parameters. 
                                 Ex) --model "classifier (load=./saved/model.pth) model=ResNet layers=18, channels=3"
                                              OR 
@@ -56,7 +54,6 @@ def _prepare_dataset(args:dict):
     result_dict = {}
     dictionarylike_statements = args.get('dataset',[])
 
-
     for dictionarylike_statement in dictionarylike_statements:
         parsed = utils.dictionarylike.parse(dictionarylike_statement)
         
@@ -66,6 +63,7 @@ def _prepare_dataset(args:dict):
             parsed['transform'] = dataset.TRANSFORM_DICT[parsed['transform']]
         
         dataset_name = parsed['_key']
+        
         dataset_args = inspect.getfullargspec( dataset.get_dataset_dict(lowercase=True)[dataset_name.lower()] ).args
         dataset_config = _get_filtered_dict(parsed,dataset_args)
 

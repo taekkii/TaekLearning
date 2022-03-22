@@ -4,7 +4,6 @@ import sys
 import importlib
 import torch.nn as nn
 
-from .model import get
 
 EXCPETIONAL_DIRECTORIES = ['__pycache__']
 
@@ -32,4 +31,19 @@ def get_model_dict(lowercase=False)->dict:
 
 for model_name, model_class in get_model_dict().items():
     setattr( sys.modules[__name__], model_name , model_class )
+
+
+
+
+def get( model_name:str , model_config:dict ):
+
+    model_dict = get_model_dict(lowercase=True)
+
+
+    #----- GUARD -----#
+    assert model_name.lower() in model_dict , f"Unregistered model : [{model_name}]"
+    
+    dataset_name = dataset_name.lower()
+
+    return model_dict[dataset_name](**model_config)
     

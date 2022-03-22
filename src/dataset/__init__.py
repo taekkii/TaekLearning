@@ -6,10 +6,12 @@ import sys
 import importlib
 from torch.utils.data import Dataset
 
-from .dataset import get
 from .transform import TRANSFORM_DICT
 
 EXCPETIONAL_DIRECTORIES = ['__pycache__']
+
+class DatasetNotExistError(Exception):
+    pass
 
 def get_all_dataset_names()->list:
     
@@ -36,3 +38,25 @@ def get_dataset_dict(lowercase=False)->dict:
 for dataset_name,dataset_class in get_dataset_dict().items():
     setattr( sys.modules[__name__], dataset_name , dataset_class )
     
+
+
+
+
+
+
+def get( dataset_name:str , dataset_config:dict )->Dataset:
+    
+    dataset_dict = get_dataset_dict(lowercase=True)
+    
+    #----- GUARD -----#
+    if dataset_name.lower() not in dataset_dict:
+        raise DatasetNotExistError(f"Unregistered dataset : [{dataset_name}]")
+    
+    dataset_name = dataset_name.lower()
+
+    return dataset_dict[dataset_name](**dataset_config)
+
+
+
+
+
