@@ -1,7 +1,7 @@
 
 
 
-def parse(input_string:str , split_token=' ', key_val_token='=',cast_token='%'):
+def parse(input_string:str , split_token=' ', key_val_token='=',cast_token='%',auto_cast = True):
     tokens = input_string.split(split_token)
 
     if key_val_token not in tokens[0]:
@@ -17,7 +17,17 @@ def parse(input_string:str , split_token=' ', key_val_token='=',cast_token='%'):
                 v=int(vtmp)
             elif typ in ['float','f']:
                 v=float(vtmp)
+        elif auto_cast:
             
+            try:
+                v=int(v)
+            except ValueError:
+                try:
+                    v=float(v)
+                except ValueError:
+                    pass
+
+        
         parse_dict[k]=v
 
     return parse_dict
