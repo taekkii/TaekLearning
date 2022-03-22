@@ -1,0 +1,7 @@
+{
+    "device":[
+        "cuda",
+        "cuda:0",
+        "cpu"
+    ]
+}

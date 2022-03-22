@@ -1,28 +1,20 @@
 
 
-
-import os
-from ..utils import config
-
-EXCPETIONAL_DIRECTORIES = ['__pycache__']
+import utils.config
+from torch.utils.data import Dataset
+#from . import get_dataset_dict
 
 class DatasetNotExistError(Exception):
     pass
 
 
-def get_all_dataset_names()->list:
+
+
+
+
+def get( dataset_name:str , dataset_config:dict )->Dataset:
     
-    file_path = os.path.realpath(__file__)
-    dir_path = os.path.dirname(file_path)
-    return [entry.name for entry in os.scandir(dir_path) if entry.is_dir()  and entry.name not in EXCPETIONAL_DIRECTORIES ]
-
-
-
-
-
-def get_dataset( dataset_name:str , dataset_config:dict ):
-    
-    dataset_dict = { k.lower():v for k,v in config.get_dataset_dict().items() }
+    dataset_dict = {k.lower():v for k,v in get_dataset_dict().items()}
     
     #----- GUARD -----#
     if dataset_name.lower() not in dataset_dict:

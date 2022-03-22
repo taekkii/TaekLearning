@@ -3,13 +3,20 @@
 import os
 
 
-import os
 
-EXCPETIONAL_DIRECTORIES = ['__pycache__']
+#from . import get_model_dict
 
 
-def get_all_model_names()->list:
+
+def get( model_name:str , model_config:dict ):
+
+    model_dict = get_model_dict(lowercase=True)
+
+
+    #----- GUARD -----#
+    assert model_name.lower() in model_dict , f"Unregistered model : [{model_name}]"
     
-    file_path = os.path.realpath(__file__)
-    dir_path = os.path.dirname(file_path)
-    return [entry.name for entry in os.scandir(dir_path) if entry.is_dir()  and entry.name not in EXCPETIONAL_DIRECTORIES ]
+    dataset_name = dataset_name.lower()
+
+    return model_dict[dataset_name](**model_config)
+    
