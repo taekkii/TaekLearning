@@ -83,8 +83,10 @@ class Trainer:
         for train_chunk in train_chunks:
             train_chunk.prepare()
         
+        #-----[Clock Reset]-----#
         self.elapsed_second = 0
         self.time0 = time.time()
+        
         
     def welcome(self):
         pass
