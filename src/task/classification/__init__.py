@@ -1,2 +1,2 @@
 
-from .classification import ClassificationTask
+from .main import ClassificationTask

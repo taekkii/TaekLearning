@@ -3,6 +3,7 @@
 import sys
 import os
 import importlib
+from .main import Task
 
 EXCPETIONAL_DIRECTORIES = ['__pycache__']
 
@@ -30,13 +31,5 @@ def get_task_dict(lowercase=False)->dict:
 
 for task_name,task_class in get_task_dict().items():
     setattr(sys.modules[__name__], task_name , task_class)
-
-
-
-class Task:
-    
-    @classmethod
-    def set_parser(cls,parser):
-        raise NotImplementedError(f"Your task class [{cls.__name__}] has not implemented set_parser(parser) method")
 
 

@@ -31,11 +31,13 @@ def _default_args(parser):
 
     parser.add_argument('--dataset', '-ds',
                         nargs='+',
+                        default=[],
                         help='''(Dictionary-like-form of) Dataset(s)
                                 Ex) --dataset "CIFAR10 transform=tf0" ''')
     
     parser.add_argument('--model' , '-m',
                         nargs='+',
+                        default=[],
                         help='''(Dictionary-like-form of) model and parameters. 
                                 Ex) --model "classifier (load=./saved/model.pth) model=ResNet layers=18, channels=3"
                                              OR 
@@ -64,7 +66,8 @@ def _prepare_dataset(args:dict):
         
         dataset_name = parsed['_key']
         
-        dataset_args = inspect.getfullargspec( dataset.get_dataset_dict(lowercase=True)[dataset_name.lower()] ).args
+        
+        dataset_args = inspect.getfullargspec( dataset.get_dataset_dict(lowercase=True)[dataset_name.lower()].__init__ ).args
         dataset_config = _get_filtered_dict(parsed,dataset_args)
 
         result_dict[dataset_name] = dataset.get(dataset_name=dataset_name , dataset_config=dataset_config)
@@ -85,12 +88,12 @@ def _prepare_model(args:dict):
             pass
 
         model_name = parsed['_key']
-        model_args = inspect.getfullargspec( model.get_model_dict(lowercase=True)[model_name.lower()] ).args
+        model_args = inspect.getfullargspec( model.get_model_dict(lowercase=True)[model_name.lower()].__init__  ).args
         model_config = _get_filtered_dict(parsed,model_args)
 
         result_dict[model_name] = model.get(model_name=model_name , model_config=model_config)
 
-
+    args['model'] = result_dict
             
 def get_args():
     parser = argparse.ArgumentParser(description="Taekki's Neural Network Script")
@@ -114,9 +117,10 @@ def get_args():
     arg = parser.parse_args()
     
     argdict = arg.__dict__
-
+    
     #-----[Post-Processes]-----#
 
     _prepare_dataset(argdict)
     _prepare_model(argdict)
 
+    return argdict

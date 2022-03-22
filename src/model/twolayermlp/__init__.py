@@ -1,3 +1,3 @@
 
 
-from .twolayermlp import TwoLayerMLP
+from .main import TwoLayerMLP

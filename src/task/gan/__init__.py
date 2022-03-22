@@ -1,4 +1,2 @@
 
-
-from .gan import GanTask
-
+from .main import GanTask

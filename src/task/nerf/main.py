@@ -1,8 +1,6 @@
 
-
-from ..task import Task
-
 from . import parser
+from .. import Task
 
 class NerfTask(Task):
     

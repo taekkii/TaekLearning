@@ -1,5 +1,6 @@
 
-from ..task import Task
+from .. import Task
+
 
 class GanTask(Task):
     def __init__(self):

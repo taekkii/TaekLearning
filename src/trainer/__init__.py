@@ -1,2 +1,4 @@
 
-from .trainer import Trainer
+from .main import Trainer
+
+

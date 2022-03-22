@@ -1,9 +1,6 @@
 
 from . import parser
-from ..task import Task
-
-import dataset
-
+from .. import Task
 
 class ClassificationTask(Task):
     

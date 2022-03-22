@@ -1,2 +1,2 @@
 
-from .cifar10 import CIFAR10Dataset
+from .main import CIFAR10Dataset

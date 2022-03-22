@@ -43,7 +43,7 @@ def get( model_name:str , model_config:dict ):
     #----- GUARD -----#
     assert model_name.lower() in model_dict , f"Unregistered model : [{model_name}]"
     
-    dataset_name = dataset_name.lower()
+    model_name = model_name.lower()
 
-    return model_dict[dataset_name](**model_config)
+    return model_dict[model_name](**model_config)
     

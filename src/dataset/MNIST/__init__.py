@@ -1,2 +1,2 @@
 
-from .mnist import MNISTDataset
+from .main import MNISTDataset

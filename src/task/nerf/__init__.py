@@ -1,2 +1,2 @@
 
-from .nerf import NerfTask
+from .main import NerfTask
