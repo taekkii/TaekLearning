@@ -24,10 +24,13 @@ def prepare_dataset(args:dict):
             parsed['config']=parsed['_key']
         
         if 'config' in parsed:
-            original_key = parsed['_key']
             config_key = parsed['config']
-            parsed = utils.predefine.load(config_key,yaml_filename='dataset')
-            parsed['_key'] = original_key
+            loaded = utils.predefine.load(config_key,yaml_filename='dataset')
+            
+            loaded.update(parsed)
+            loaded.pop('config')
+            parsed = loaded
+            
 
         if 'transform' in parsed:
             parsed['transform'] = dataset.TRANSFORM_DICT[parsed['transform']]
@@ -56,10 +59,12 @@ def prepare_model(args:dict):
             parsed['config']=parsed['_key']
 
         if 'config' in parsed:
-            original_key = parsed['_key']
             config_key = parsed['config']
-            parsed = utils.predefine.load(config_key,yaml_filename='model')
-            parsed['_key'] = original_key
+            loaded = utils.predefine.load(config_key,yaml_filename='model')
+            
+            loaded.update(parsed)
+            loaded.pop('config')
+            parsed = loaded
             
 
         net_name = parsed['_key']
@@ -81,9 +86,19 @@ def prepare_trainchunk(args:dict):
         
         parsed = utils.dictionarylike.parse(dictionarylike_statement)
 
-        if 'config' in parsed:
-            pass
+        if len(parsed)==1 and '_key' in parsed:
+            parsed['config']=parsed['_key']
 
+        if 'config' in parsed:
+            config_key = parsed['config']
+            loaded = utils.predefine.load(config_key,yaml_filename='trainchunk')
+            
+            loaded.update(parsed)
+            loaded.pop('config')
+            parsed = loaded
+        
+        if '_key' in parsed: parsed.pop('_key')
+        
         result_list.append(parsed)
 
     args['trainchunk'] = result_list

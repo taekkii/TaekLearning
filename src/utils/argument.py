@@ -11,6 +11,7 @@ import task
 
 def _default_args(parser):
 
+    
     parser.add_argument('--device','-d',
                         type=str.lower,
                         choices=config.get(key='device'),
@@ -39,6 +40,12 @@ def _default_args(parser):
                         help='''(Dictionary-like-form of) Train Chunk(set of NeuralNet, optimizer and possibly LRscheduler, with necessary hyperparameters). 
                                 Ex) --trainchunk "net=classifier optimizer=SGD lrscheduler=CosineLR lr=30 momentum=0.9 weight_decay=1e-4 ..."''')
 
+    parser.add_argument("--experiment-name","-e",
+                        type=str,
+                        default="default_experiment",
+                        help='The title of experiment')
+
+    
     parser.add_argument('--save','-s',
                         action='store_true',
                         help='Save all models after running the script is done.')  
@@ -56,7 +63,7 @@ def _default_args(parser):
                         action='store_true',
                         help='Saves all dictionary-like-form to provided PATH, and exits.')
 
-    parser.add_argument("--epoch",'-e',
+    parser.add_argument("--epoch",'-ep',
                        default=None,
                        help='The number of epochs. Error if used with --iter')
 

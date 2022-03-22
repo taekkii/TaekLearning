@@ -9,8 +9,11 @@ import utils.dictionarylike
 def activate_predefine(target_list:list,save_filename:str):
     
     for target in target_list:
-
+        
         parsed = utils.dictionarylike.parse(target)
+        
+        if 'config' in parsed: continue
+        
         key = parsed['_key']
         parsed.pop('_key')
 
@@ -22,6 +25,7 @@ def main():
     if arg['predefine_save']:
         activate_predefine(arg['dataset'],'dataset')
         activate_predefine(arg['model'],'model')
+        activate_predefine(arg['trainchunk'],'trainchunk')
         exit()
     
     

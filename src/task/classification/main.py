@@ -1,7 +1,7 @@
 
 from . import parser
 from .. import Task
-#import trainer
+import trainer
 
 class ClassificationTask(Task):
     

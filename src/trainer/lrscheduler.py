@@ -4,7 +4,7 @@ import torch.optim.lr_scheduler as lr_scheduler
 
 import torch.nn as nn
 from typing import Optional
-from ..notmine.katsura import CosineAnnealingWarmupRestarts
+from notmine.katsura import CosineAnnealingWarmupRestarts
 
 #-----[Supporting LR Scheduler]-----#
 lr_Scheduler_dict = {
