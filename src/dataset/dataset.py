@@ -1,22 +1,29 @@
 
 
-from torchvision.datasets import MNIST
-from torchvision.datasets import CIFAR10
 
+import os
+from ..utils import config
+
+EXCPETIONAL_DIRECTORIES = ['__pycache__']
 
 class DatasetNotExistError(Exception):
     pass
 
 
+def get_all_dataset_names()->list:
+    
+    file_path = os.path.realpath(__file__)
+    dir_path = os.path.dirname(file_path)
+    return [entry.name for entry in os.scandir(dir_path) if entry.is_dir()  and entry.name not in EXCPETIONAL_DIRECTORIES ]
 
 
-dataset_dict = dict(mnist=MNIST,
-                    cifar10=CIFAR10)
 
 
-def get( dataset_name:str , dataset_config:dict ):
-    print(f"Trying to get dataset [{dataset_name}]...\n")
 
+def get_dataset( dataset_name:str , dataset_config:dict ):
+    
+    dataset_dict = { k.lower():v for k,v in config.get_dataset_dict().items() }
+    
     #----- GUARD -----#
     if dataset_name.lower() not in dataset_dict:
         raise DatasetNotExistError(f"Unregistered dataset : [{dataset_name}]")

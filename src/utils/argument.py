@@ -26,8 +26,10 @@ def get_args():
     parser.add_argument('--flag','-f',
                         type=str,
                         help='Feel-free-to-use additioanl flag for your scripting.')
-                        
-    for task_name,task_class in config.task_dict.items():
+    
+    task_dict = config.get_task_dict()
+    
+    for task_name,task_class in task_dict.items():
         sub_parser = subparsers.add_parser( name=task_name , help=f': Task' )
         
         if hasattr(task_class,"set_parser"):
