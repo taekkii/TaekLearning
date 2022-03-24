@@ -67,8 +67,8 @@ class Trainer:
                 self.lr_scheduler.step()
 
             return loss.item()
-            
-
+      
+       
     def __init__(self,datasets,settings:dict,train_chunks:Iterable[TrainChunk]):
         
         #-----[WELCOME]-----#
