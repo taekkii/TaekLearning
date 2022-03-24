@@ -9,7 +9,7 @@ class Visualizer:
             self.env = env
             self.vis_dict = dict()
             
-            self.visdom.close(env)
+            self.visdom.close(env=env)
 
         def attach_graph(self, title:str , target , legend:str, **additional):
             if title not in self.vis_dict:
@@ -57,9 +57,12 @@ class Visualizer:
                 if len(trace)==0:return
 
                 x_len = len(trace[0])
+                if x_len <= 0: return 
+                
                 x0    = vis_obj.get('x0',0) 
                 x     = list(range(x0,x_len+x0))
 
+                 
                 if len(trace)==1:
                     self.visdom.line(Y=trace[0] , X=x , win=win , opts=opts , env=self.env )
                 else:

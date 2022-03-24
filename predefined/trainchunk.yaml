@@ -1,5 +1,9 @@
-basic:
-  lr: 0.01
-  momentum: 0.9
+basic: {}
+transformer_train:
+  lr: 0.001
+  lr_scheduler: CosineOneCycle
   net: net
-  optimizer: SGD
+  optimizer: AdamW
+  warmup: 5
+  weight_decay: 0.1
+  grad_clip: 1.0

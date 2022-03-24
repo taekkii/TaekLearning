@@ -1,13 +1,6 @@
 mnist:
   name: MNIST
   transform: basic
-mnist_test:
-  name: MNIST
-  train: false
-  transform: basic
-mnist_train:
-  name: MNIST
-  transform: basic
 test_cifar10:
   name: CIFAR10
   train: false
@@ -15,4 +8,4 @@ test_cifar10:
 train_cifar10:
   name: CIFAR10
   train: true
-  transform: basic
+  transform: basic_cifar_augment

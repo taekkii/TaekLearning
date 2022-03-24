@@ -3,6 +3,7 @@ import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 
 import torch.nn as nn
+import copy
 from typing import Optional
 from notmine.katsura import CosineAnnealingWarmupRestarts
 
@@ -38,6 +39,12 @@ lr_Scheduler_dict = {
                            exceptional=True)
 
 }
+DEFAULT = {
+    "warmup":0,
+    "eta_min":0.0,
+    'gamma':0.5,
+
+}
 def get_lr_scheduler(optimizer:optim.Optimizer,
                      lr_scheduler_name:Optional[str],
                      lr_scheduler_hyperparam:dict):
@@ -48,40 +55,45 @@ def get_lr_scheduler(optimizer:optim.Optimizer,
     assert lr_scheduler_name.lower() in lr_Scheduler_dict   ,   f"Unsupporting LR scheduler:[{lr_scheduler_name}]"
     
     lr_scheduler_name = lr_scheduler_name.lower()
-
+    h = copy.deepcopy(lr_scheduler_hyperparam)
+    
+    for k in DEFAULT:
+        if k not in h:
+            h[k] = DEFAULT[k]
+    
     if "exceptional" not in lr_Scheduler_dict[lr_scheduler_name]:
-        hyperparams = {k:v for k,v in lr_scheduler_hyperparam.items() if k in lr_Scheduler_dict[lr_scheduler_name]['flexible'] }
+        hyperparams = {k:v for k,v in h.items() if k in lr_Scheduler_dict[lr_scheduler_name]['flexible'] }
         hyperparams.update(lr_Scheduler_dict[lr_scheduler_name]['default'])
         return lr_Scheduler_dict['base_class'](optimizer=optimizer,**hyperparams)
     else:
         if   lr_scheduler_name == 'simpllinearlr':
             return lr_scheduler.OneCycleLR(optimizer,
-                                           max_lr=lr_scheduler_hyperparam['lr'],
-                                           total_steps=lr_scheduler_hyperparam['iters'],
-                                           pct_start=lr_scheduler_hyperparam['warmup']/lr_scheduler_hyperparam['iters'],
+                                           max_lr=h['lr'],
+                                           total_steps=h['iter'],
+                                           pct_start=h['warmup']/h['iter'],
                                            anneal_strategy='linear',
                                            div_factor=1e9,
                                            final_div_factor=1e9)
         
         elif lr_scheduler_name == 'onecyclelr':
             return lr_scheduler.OneCycleLR(optimizer,
-                                           max_lr=lr_scheduler_hyperparam['lr'],
-                                           total_steps=lr_scheduler_hyperparam['iters'])
+                                           max_lr=h['lr'],
+                                           total_steps=h['iter'])
         
         elif lr_scheduler_name == 'cosinelr':
             return CosineAnnealingWarmupRestarts(optimizer=optimizer,
-                                                 first_cycle_steps=lr_scheduler_hyperparam['t_0'],
-                                                 cycle_mult=lr_scheduler_hyperparam['t_mult'],
-                                                 max_lr=lr_scheduler_hyperparam['lr'],
-                                                 min_lr=lr_scheduler_hyperparam['eta_min'],
-                                                 warmup_steps=lr_scheduler_hyperparam['warmup'],
-                                                 gamma=lr_scheduler_hyperparam['gamma'])
+                                                 first_cycle_steps=h['t_0'],
+                                                 cycle_mult=h['t_mult'],
+                                                 max_lr=h['lr'],
+                                                 min_lr=h['eta_min'],
+                                                 warmup_steps=h['warmup'],
+                                                 gamma=h['gamma'])
         elif lr_scheduler_name == 'cosineonecycle':
             return CosineAnnealingWarmupRestarts(optimizer=optimizer,
-                                                 first_cycle_steps=lr_scheduler_hyperparam['iters'],
+                                                 first_cycle_steps=h['iter'],
                                                  cycle_mult=1.0,
-                                                 max_lr=lr_scheduler_hyperparam['lr'],
-                                                 min_lr=lr_scheduler_hyperparam['eta_min'],
-                                                 warmup_steps=lr_scheduler_hyperparam['warmup'],
+                                                 max_lr=h['lr'],
+                                                 min_lr=h['eta_min'],
+                                                 warmup_steps=h['warmup'],
                                                  gamma=1.0)
     

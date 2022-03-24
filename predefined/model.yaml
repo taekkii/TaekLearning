@@ -1,3 +1,12 @@
+light_transformer:
+  D: 192
+  mlp_size: 384
+  model: mytransformer
+  n_channels: 3
+  n_classes: 10
+  num_encoders: 7
+  patch_size: 4
+  num_heads: 12
 simplenet:
   input_features: 784
   model: TwoLayerMLP

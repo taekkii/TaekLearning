@@ -86,9 +86,9 @@ class ClassificationTask(Task):
             val_acc,val_loss = get_classification_accuracy(loader,self.models['net'],torch.nn.CrossEntropyLoss(label_smoothing=0.1) )
             
             self.record('train_loss' , self.train_loss / self.all)
-            self.record('train_acc'  , self.correct / self.all)
+            self.record('train_acc'  , self.correct*100 / self.all)
             self.record('val_loss'   , val_loss)
-            self.record('val_acc'    , val_acc)
+            self.record('val_acc'    , val_acc*100)
 
             self.correct , self.all = 0,0
             self.train_loss = 0

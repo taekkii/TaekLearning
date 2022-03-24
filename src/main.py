@@ -33,7 +33,7 @@ def main():
     utils.prepare.prepare_dataset(arg)
     utils.prepare.prepare_model(arg)
     utils.prepare.prepare_trainchunk(arg)
-    print(arg)
+   # print(arg)
     
     task = arg['task_class'](arg)    
     task()

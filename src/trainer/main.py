@@ -67,7 +67,7 @@ class Trainer:
             
             self.optimizer = optimizer.get_optimizer(self.net, self.optimizer_name, self.hyperparam)
             if self.lr_scheduler_name is not None:
-                self.lr_scheduler = lrscheduler.get_lr_scheduler(self.net,self.lr_scheduler_name,self.hyperparam)
+                self.lr_scheduler = lrscheduler.get_lr_scheduler(self.optimizer,self.lr_scheduler_name,self.hyperparam)
         
         
 
@@ -351,12 +351,14 @@ class Trainer:
     def _config_trainchunk(self,trainchunks):
 
         ret_list = []
+        
         for trainchunk in trainchunks:
             if isinstance(trainchunk,dict):
                 t = Trainer.TrainChunk(trainchunk)
             else:
                 t = trainchunk
-            
+            t.hyperparam['iter'] = self.settings['iter']
+
             t.config_network(self.models)
             t.config_optimizer()
             ret_list.append(t)

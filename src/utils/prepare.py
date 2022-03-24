@@ -69,6 +69,7 @@ def prepare_model(args:dict):
 
         net_name = parsed['_key']
         model_name = parsed['model']
+        
         model_args = inspect.getfullargspec( model.get_model_dict(lowercase=True)[model_name.lower()].__init__  ).args
         model_config = _get_filtered_dict(parsed,model_args)
 
