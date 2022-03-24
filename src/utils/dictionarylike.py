@@ -18,14 +18,16 @@ def parse(input_string:str , split_token=' ', key_val_token='=',cast_token='%',a
             elif typ in ['float','f']:
                 v=float(vtmp)
         elif auto_cast:
-            
-            try:
-                v=int(v)
-            except ValueError:
+            if v == 'True' or v == 'False':
+                v = v=='True'
+            else:
                 try:
-                    v=float(v)
+                    v=int(v)
                 except ValueError:
-                    pass
+                    try:
+                        v=float(v)
+                    except ValueError:
+                        pass
 
         
         parse_dict[k]=v

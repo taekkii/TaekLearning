@@ -72,7 +72,7 @@ def prepare_model(args:dict):
         model_args = inspect.getfullargspec( model.get_model_dict(lowercase=True)[model_name.lower()].__init__  ).args
         model_config = _get_filtered_dict(parsed,model_args)
 
-        result_dict[net_name] = model.get(model_name=model_name , model_config=model_config)
+        result_dict[net_name] = model.get(model_name=model_name , model_config=model_config).to(args['device'])
 
     args['model'] = result_dict
             

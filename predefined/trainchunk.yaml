@@ -1,7 +1,5 @@
-test:
-  lr: 0.001
-  lr_scheduler: CosineLR
+basic:
+  lr: 0.01
   momentum: 0.9
   net: net
   optimizer: SGD
-  weight_decay: 0.0001

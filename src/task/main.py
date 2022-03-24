@@ -22,6 +22,5 @@ class Task:
         raise NotImplementedError(f"Your task class [{cls.__name__}] has not implemented set_parser(parser) method")
 
 
-    def __call__(self):
-        pass
-#        raise NotImplementedError(f"Your task class [{self.__class__.__name__}] has not implemented __call__(self) method")
+    def __call__(self):        
+        raise NotImplementedError(f"Your task class [{self.__class__.__name__}] has not implemented __call__(self) method")

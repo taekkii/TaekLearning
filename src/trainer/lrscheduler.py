@@ -58,7 +58,7 @@ def get_lr_scheduler(optimizer:optim.Optimizer,
             return lr_scheduler.OneCycleLR(optimizer,
                                            max_lr=lr_scheduler_hyperparam['lr'],
                                            total_steps=lr_scheduler_hyperparam['iters'],
-                                           pct_start=lr_scheduler_hyperparam['warmup_iters']/lr_scheduler_hyperparam['iters'],
+                                           pct_start=lr_scheduler_hyperparam['warmup']/lr_scheduler_hyperparam['iters'],
                                            anneal_strategy='linear',
                                            div_factor=1e9,
                                            final_div_factor=1e9)
@@ -74,7 +74,7 @@ def get_lr_scheduler(optimizer:optim.Optimizer,
                                                  cycle_mult=lr_scheduler_hyperparam['t_mult'],
                                                  max_lr=lr_scheduler_hyperparam['lr'],
                                                  min_lr=lr_scheduler_hyperparam['eta_min'],
-                                                 warmup_steps=lr_scheduler_hyperparam['warmup_iters'],
+                                                 warmup_steps=lr_scheduler_hyperparam['warmup'],
                                                  gamma=lr_scheduler_hyperparam['gamma'])
         elif lr_scheduler_name == 'cosineonecycle':
             return CosineAnnealingWarmupRestarts(optimizer=optimizer,
@@ -82,6 +82,6 @@ def get_lr_scheduler(optimizer:optim.Optimizer,
                                                  cycle_mult=1.0,
                                                  max_lr=lr_scheduler_hyperparam['lr'],
                                                  min_lr=lr_scheduler_hyperparam['eta_min'],
-                                                 warmup_steps=lr_scheduler_hyperparam['warmup_iters'],
+                                                 warmup_steps=lr_scheduler_hyperparam['warmup'],
                                                  gamma=1.0)
     

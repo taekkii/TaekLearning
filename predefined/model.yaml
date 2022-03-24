@@ -1,4 +1,4 @@
 simplenet:
-  input_features: 4096
+  input_features: 784
   model: TwoLayerMLP
   output_features: 10
