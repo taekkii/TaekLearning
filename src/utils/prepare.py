@@ -9,6 +9,8 @@ import dataset.transform
 import utils.dictionarylike
 import utils.predefine
 
+import torch
+
 def _get_filtered_dict(original_dict:dict , include:Iterable[str] ):    
     return{k:v for k,v in original_dict.items() if k in include}
 
@@ -25,7 +27,7 @@ def prepare_dataset(args:dict):
         
         if 'config' in parsed:
             config_key = parsed['config']
-            loaded = utils.predefine.load(config_key,yaml_filename='dataset')
+            loaded = utils.predefine.load(key=config_key , yaml_filename='dataset')
             
             loaded.update(parsed)
             loaded.pop('config')
@@ -42,6 +44,7 @@ def prepare_dataset(args:dict):
         dataset_config = _get_filtered_dict(parsed,dataset_args)
 
         result_dict[key] = dataset.get(dataset_name=dataset_name , dataset_config=dataset_config)
+
 
     args['dataset'] = result_dict
 
@@ -60,7 +63,7 @@ def prepare_model(args:dict):
 
         if 'config' in parsed:
             config_key = parsed['config']
-            loaded = utils.predefine.load(config_key,yaml_filename='model')
+            loaded = utils.predefine.load(key=config_key , yaml_filename='model')
             
             loaded.update(parsed)
             loaded.pop('config')
@@ -74,6 +77,20 @@ def prepare_model(args:dict):
         model_config = _get_filtered_dict(parsed,model_args)
 
         result_dict[net_name] = model.get(model_name=model_name , model_config=model_config).to(args['device'])
+        
+        if 'load' in parsed:
+            load_path = parsed['load']
+            sdict = torch.load(load_path)
+            try:
+                if "IS_TAEKLEARNING_CHECKPOINT" in sdict:
+                    result_dict[net_name].load(sdict['MODEL_'+net_name])
+                else:   
+                    result_dict[net_name].load(sdict)
+            except Exception as e:
+                print(f"Load Failed for [{net_name}]\n")
+                print(e)
+            else:
+                print(f"Successfully loaded [{net_name}] from {load_path}\n")
 
     args['model'] = result_dict
             
@@ -92,7 +109,7 @@ def prepare_trainchunk(args:dict):
 
         if 'config' in parsed:
             config_key = parsed['config']
-            loaded = utils.predefine.load(config_key,yaml_filename='trainchunk')
+            loaded = utils.predefine.load(key=config_key,yaml_filename='trainchunk')
             
             loaded.update(parsed)
             loaded.pop('config')

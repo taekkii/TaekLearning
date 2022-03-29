@@ -3,5 +3,8 @@
         "cuda",
         "cuda:0",
         "cpu"
-    ]
+    ],
+    "random_seed":987,
+    "save_path":"./saved"
+
 }

@@ -15,8 +15,12 @@ def _default_args(parser):
     parser.add_argument('--device','-d',
                         type=str.lower,
                         choices=config.get(key='device'),
-                        required=True,
                         help = '[Required] Device(s) for run')
+
+    parser.add_argument("--experiment-name","-e",
+                        type=str,
+                        default="default_experiment",
+                        help='[Required]The title of experiment')
 
     parser.add_argument('--dataset', '-ds',
                         nargs='+',
@@ -27,12 +31,8 @@ def _default_args(parser):
     parser.add_argument('--model' , '-m',
                         nargs='+',
                         default=[],
-                        help='''(Dictionary-like-form of) model and parameters. 
-                                Ex) --model "classifier (load=./saved/model.pth) model=ResNet layers=18, channels=3"
-                                      [OR] 
-                                    --model "config=net"
-                                    
-                                    ''')
+                        help="(Dictionary-like-form of) model and parameters. " +
+                             '''Ex) --model "classifier (load=./saved/model.pth) model=ResNet layers=18, channels=3"   [OR]   --model "net config=resnet18''')
     
     parser.add_argument('--trainchunk','-t',
                         nargs='+',
@@ -40,22 +40,19 @@ def _default_args(parser):
                         help='''(Dictionary-like-form of) Train Chunk(set of NeuralNet, optimizer and possibly LRscheduler, with necessary hyperparameters). 
                                 Ex) --trainchunk "net=classifier optimizer=SGD lrscheduler=CosineLR lr=0.1 momentum=0.9 weight_decay=1e-4 ..."''')
 
-    parser.add_argument("--experiment-name","-e",
-                        type=str,
-                        default="default_experiment",
-                        help='The title of experiment')
 
     parser.add_argument("--batch-size","-bs",
                         type=int,
                         default=128,
                         help='(General purpose) Batch size')
+
     parser.add_argument('--save','-s',
                         action='store_true',
                         help='Save all models after running the script is done.')  
 
     parser.add_argument('--resume','-r',
                         type=str,
-                        help='Name of checkpoint file.')
+                        help='Name of checkpoint file. The training process will resume from the checkpoint')
 
     parser.add_argument("--disable-recent-checkpoint",
                          action='store_true',
@@ -69,6 +66,20 @@ def _default_args(parser):
     parser.add_argument('--predefine-save','-p',
                         action='store_true',
                         help='Saves all dictionary-like-form to provided PATH, and exits.')
+    
+
+    parser.add_argument("--clear-checkpoint" , '-cc',
+                        action='store_true',
+                        help='Remove all files in directory [./checkpoint]. and exits')
+    
+    
+    parser.add_argument("--summary-predefines" , "-spd",
+                        action='store_true',
+                        help='Show contents of predefined settings, and exits.')
+
+    parser.add_argument("--summary-available-settings" , "-sas",
+                        action='store_true',
+                        help='Show summary of available dataset, model, and tasks. After that, exits.')
 
     parser.add_argument("--epoch",'-ep',
                        default=None,
@@ -109,7 +120,9 @@ def get_args():
     
     argdict = arg.__dict__
     
-    assert argdict['iter'] is None   or    argdict['epoch'] is None , "Both of # of iterations and # of epochs are given."
-    
+    if not ( argdict['predefine_save'] or argdict['clear_checkpoint'] or argdict['summary_predefines'] or argdict['summary_available_settings']): 
+        assert argdict['iter'] is None   or    argdict['epoch'] is None , "Both of # of iterations and # of epochs are given."
+        assert 'device' in argdict , "--device(-d) is a required argument"
+        assert 'experiment_name' in argdict , '--experiment-name(-e) is a required argument'
     
     return argdict

@@ -2,7 +2,7 @@
 
 import yaml
 
-
+from typing import Optional
 
 def save(key,obj,yaml_filename='default',yaml_dir_path='./predefined'):
 
@@ -22,7 +22,7 @@ def save(key,obj,yaml_filename='default',yaml_dir_path='./predefined'):
     print(f"Saved a predefine setting to {file_path}")
 
 
-def load(key,yaml_filename='default',yaml_dir_path='./predefined'):
+def load(key:Optional[str]=None , yaml_filename='default' , yaml_dir_path='./predefined'):
 
     file_path = yaml_dir_path+'/'+yaml_filename+'.yaml'
 
@@ -32,5 +32,6 @@ def load(key,yaml_filename='default',yaml_dir_path='./predefined'):
     except FileNotFoundError:
         di = {}
         
-    return di[key]
+    if key is None: return di
+    else:           return di[key]
     

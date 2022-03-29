@@ -4,7 +4,7 @@ mnist:
 test_cifar10:
   name: CIFAR10
   train: false
-  transform: basic
+  transform: basic_cifar
 train_cifar10:
   name: CIFAR10
   train: true

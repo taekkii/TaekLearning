@@ -300,6 +300,9 @@ class Trainer:
 
         sdict = torch.load(path)
 
+        assert 'TAEKLEARNING_CHECKPOINT' in sdict  ,  f"[{path}] : Not a TaekLearning Checkpoint File"
+
+
         for model_name,model in self.models.items():
             model.load_state_dict( sdict["MODEL_" + model_name] )
 
@@ -313,10 +316,10 @@ class Trainer:
             
     def save(self, checkpoint_file , dir_path = CHECKPOINT_DIR_PATH):
         
-        sdict = {}
+        sdict = {'TAEKLEARNING_CHECKPOINT':True}
 
         path = dir_path + '/' + checkpoint_file + '.pth'
-
+        
         for model_name,model in self.models.items():
             sdict["MODEL_" + model_name] = model.state_dict()
 
