@@ -21,7 +21,7 @@ class Visualizer:
 
 
         def new(self , title:str , category:str , **additional ):
-            #----- [Delete previous object if id is occupied] -----#
+            #----- [Delete previous object if title is occupied] -----#
             self.delete(title)
             if   category == 'graph': self.vis_dict[title] = self._config_graph(title,additional)
             elif category == 'text' : pass
