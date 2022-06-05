@@ -98,11 +98,6 @@ class ClassificationTask(Task):
     def __init__(self,args):
         super().__init__(args)
         
-        self.settings    = copy.deepcopy(args)
-
-        self.datasets    = self.settings.pop('dataset')
-        self.models      = self.settings.pop('model')
-        self.trainchunks = self.settings.pop('trainchunk')
         self.is_train = self.settings.pop("train")
         self.is_test  = self.settings.pop("test")
 

@@ -1,20 +1,16 @@
 
+import copy
+
 class Task:
     
     def __init__(self,args:dict):
-        self.dataset = args['dataset']
-        self.model   = args['model']
-        self.device  = args['device']
-        self.train_chunk = args['trainchunk']
         
-        self.epoch = args['epoch']
-        self.iter  = args['iter']
-        
-        
-#        print(self.dataset)
-#        print(self.model)
-#        print(self.device)
-#        print(self.train_chunk)
+        self.settings    = copy.deepcopy(args)
+
+        self.datasets    = self.settings.pop('dataset')
+        self.models      = self.settings.pop('model')
+        self.trainchunks = self.settings.pop('trainchunk')
+
         
 
     @classmethod
