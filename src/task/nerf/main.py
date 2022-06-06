@@ -2,7 +2,7 @@
 from . import parser
 from .. import Task
 
-
+from .train import NeRFTrainer
 
 
 class NerfTask(Task):
@@ -14,11 +14,10 @@ class NerfTask(Task):
         super().__init__(args)
         
         print('=========== [NeRFTask] ==========')
-        print("REALITY nogada dream comes true!")
-        print("=================================\n\n")
 
 
+
+    def __call__(self):
+        t = NeRFTrainer(self.datasets,self.models,self.trainchunks,self.settings)
+        t.run()
         
-
-    def __call(self):
-        pass
