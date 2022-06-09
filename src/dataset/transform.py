@@ -5,6 +5,7 @@ RGB_MEAN = (0.491,0.482,0.447)
 RGB_STD  = (0.247,0.243,0.261)
 
 TRANSFORM_DICT = {
+    'totensor':transforms.ToTensor(),
     'basic_cifar': transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize(RGB_MEAN,RGB_STD)

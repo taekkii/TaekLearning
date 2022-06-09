@@ -37,6 +37,7 @@ class Visualizer:
 
         
         def run(self):
+            print("[VISUALIZER] activated")
             for vis_obj in self.vis_dict.values():
                 self._run_vis_obj(vis_obj)
 
@@ -64,6 +65,6 @@ class Visualizer:
 
                  
                 if len(trace)==1:
-                    self.visdom.line(Y=trace[0] , X=x , win=win , opts=opts , env=self.env )
+                    self.visdom.line(Y=torch.Tensor(trace[0]) , X=x , win=win , opts=opts , env=self.env )
                 else:
                     self.visdom.line(Y=torch.Tensor(trace).t() , X=x , win=win , opts=opts , env=self.env )

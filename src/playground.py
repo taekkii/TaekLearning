@@ -1,35 +1,87 @@
 
+from torch.utils.data import Dataset, DataLoader
 import torch
+import numpy as np
+import torchvision.transforms
 
-def pos_enc(point:torch.Tensor , length:int):
+
+from dataset.posedimg import PosedImage
+from visdom import Visdom
+
+from task.nerf.ray import get_batch_rays, get_rays
+from task.nerf.utils import get_intrinsic
+
+
+class MyDataset(Dataset):
+    def __init__(self,device):
+        super().__init__()
+
+        self.device=device
+        self.x = torch.randn(50000,10000 , device=self.device)
+        self.x.requires_grad=False
+
+    def __getitem__(self, index):
+        return self.x[index]
+    
+    def __len__(self):
+        return 50000
+
+import time
+dset = MyDataset('cuda:5')
+loader = DataLoader(dset,batch_size=64,shuffle=True,num_workers=0)
+t0 = time.time()
+for batch_data in loader:
+    y=2*batch_data
     
 
-    p,L = point,length
+print(time.time()-t0)
+
+# lego_dset = PosedImage("/home/jeongtaekoh/dataset/lego_downscale/lego200" , transforms=torchvision.transforms.ToTensor() ,metadata_filename="transforms_train")
+
+# loader = DataLoader(lego_dset , batch_size=2,shuffle=True)
+
+
+# v = Visdom()
+# for i, (img,pose,fovx) in enumerate(loader):
+#     print("[ITERATION] {}".format(i))
+#     fovx = fovx[0]
+#     b,ch,h,w = img.shape
     
-    if p.dim()==1: p = p.unsqueze(0)
-    b,ch = p.shape
-   
-    # p : [b x c]
-    assert p.dim()==2 
-
-    # geo_seq: [L]
-    geo_seq = torch.exp2( torch.arange(L) ) * torch.pi 
-    print(geo_seq)
-
-    # seq: [b x 1 x c]*[L x 1] = [b x L X c] --(view)-->[b x (Lc)]
-    seq = ( p.unsqueeze(1) * geo_seq.unsqueeze(1) ).view(b,-1)
     
-    # enc: [b x (2Lc)]
-    enc = torch.zeros(b , seq.shape[-1]*2 )
-    enc[:,0::2] = torch.sin(seq)
-    enc[:,1::2] = torch.cos(seq)
+#     v.images(img)
+#     if i >= 0: break
+
+
+
+# class MyDataset(Dataset):
+#     def __init__(self):
+#         print("hi")
     
-    return enc
+#     def __getitem__(self,idx):
+#         return np.array([idx])
+#     def __len__(self):
+#         return int(1e12)
+
+
+# dset = MyDataset()
+# loader = DataLoader(dset,batch_size=4,shuffle=True)
+
+# for i,data in enumerate(loader):
+#     print(data)
+#     if i>=100:
+#         break
 
 
 
-    
-print( pos_enc(point=torch.Tensor([[0,1,2],[3,4,5]]) , length=4) )
+
+
+
+
+
+
+
+
+
 # #import cvxpy as cp
 # from time import sleep
 # import numpy as np

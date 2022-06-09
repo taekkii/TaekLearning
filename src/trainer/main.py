@@ -24,9 +24,9 @@ from tqdm import tqdm,trange
 NUM_WORKERS = 10
 GENERATOR_TOLERANCE = int(1e8)
 EPOCH2ITER_KEYS_TRAINCHUNK = ['t_0','t_mult','warmup','milestones','step_size']
-EPOCH2ITER_KEYS_SETTINGS = ['checpoint-cycle']
+EPOCH2ITER_KEYS_SETTINGS = ['checkpoint-cycle']
 
-MIN_VISUALIZE_INTERVAL = 2.0
+MIN_VISUALIZE_INTERVAL = 30.0
 MIN_RECENT_CHECKPOINT_INTERVAL = 60.0
 
 TQDM_MININTERVAL = 0.01
@@ -74,11 +74,16 @@ class Trainer:
         def get_lr(self):
             return self.optimizer.param_groups[0]['lr']
         
-
-        def forward_and_backward(self,*input,target:Optional[torch.Tensor],obj_func:Callable,optimizer_step=True,lr_scheduler_step=True):
+       
             
+        def forward(self,*input,target:Optional[torch.Tensor],obj_func:Callable):
+            """
+            Forward pass.
+            Just forwards through network, calculates loss(output,target).
+            Above behavior is not generalizable and it's very likely for you to override this method
+            """
             assert hasattr(self,'net') , "Configure your model by calling config_network() first."
-            assert hasattr(self,'optimizer') , 'config your optimizer(and possibly LR scheduler) by calling config_optimizer first.'
+            
             self.net.train()
 
             output = self.net(*input)
@@ -86,6 +91,11 @@ class Trainer:
                 loss = obj_func(output,target)
             else:
                 loss = obj_func(output)
+            return output,loss
+
+        def backward(self,loss,optimizer_step=True,lr_scheduler_step=True):
+            assert hasattr(self,'net') , "Configure your model by calling config_network() first."
+            assert hasattr(self,'optimizer') , 'config your optimizer(and possibly LR scheduler) by calling config_optimizer first.'
             
             loss.backward()
             
@@ -98,6 +108,15 @@ class Trainer:
             
             if lr_scheduler_step   and   self.lr_scheduler_name is not None:
                 self.lr_scheduler.step()
+        
+        
+        def forward_and_backward(self,*input,target:Optional[torch.Tensor],obj_func:Callable,optimizer_step=True,lr_scheduler_step=True):
+            """
+            This is a legacy and not used anymore
+            """    
+    
+            output,loss = self.forward(*input,target,obj_func)
+            self.backward(loss,optimizer_step,lr_scheduler_step)
 
             return output, loss.item()
       
@@ -136,14 +155,15 @@ class Trainer:
             
         
         def __call__(self,iter):
-
+            
             if self.min_interval is not None  and  time.time() - self.t0 <= self.min_interval:
                 return
+            
             self.t0 = time.time()
-
+            
             if iter % self.cycle == 0:
                 self.func(*self.args)
-        
+     
     
         
                                 
@@ -214,7 +234,7 @@ class Trainer:
         
         #-----[GUARD]-----#
         if 'epoch' not in self.settings: return
-
+        if self.settings['epoch'] is None: return
         
         iters_per_epochs = sum( len(dataloader) for loader_name,dataloader in self.dataloaders.items() if loader_name not in TEST_DATASET_KEYWORDS )        
         
@@ -246,7 +266,12 @@ class Trainer:
         assert hasattr(self,'datasets')  ,  "No datasets found"
         assert 'batch_size' in self.settings  ,  "'settings' misses key [batch_size]"
         
-        self.dataloaders = {k:DataLoader(dataset , self.settings['batch_size'] , shuffle=shuffle , num_workers=NUM_WORKERS) for k,dataset in self.datasets.items() }
+        
+        self.dataloaders = {k:DataLoader(dataset , 
+                                         self.settings['batch_size'] , 
+                                         shuffle=shuffle , 
+                                         num_workers=NUM_WORKERS if type(dataset[0])==torch.Tensor and 'cuda' in dataset[0].device else 0 ) 
+                                         for k,dataset in self.datasets.items() }
             
     #generator
     def get_data(self,exception_keys:Iterable[str] = []):
@@ -272,6 +297,7 @@ class Trainer:
         for data in tqdm( self.get_data(exception_keys=TEST_DATASET_KEYWORDS) , 
                           desc="Training Process", mininterval=TQDM_MININTERVAL , 
                           total=self.settings['iter'],initial = self.it-1):
+            
             self.step(data)
 
             for addon in self.addons:
@@ -328,9 +354,13 @@ class Trainer:
 
         for key in CHECKPOINT_KEYWORDS: 
             sdict['TRAINERKEY_'+key] = getattr(self,key)
-
-        torch.save(sdict,path)
-
+        try:
+            torch.save(sdict,path)
+        except FileNotFoundError:
+            import os;os.mkdir(dir_path)
+            print(f"[No checkpoint directory] Directory {dir_path} has been created")
+            torch.save(sdict,path)
+        
         print(f"[Checkpoint Saved] to {path} : [{self.it}]th iteration")
 
     def step(self,*data):

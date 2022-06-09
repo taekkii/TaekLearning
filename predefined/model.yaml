@@ -5,8 +5,10 @@ light_transformer:
   n_channels: 3
   n_classes: 10
   num_encoders: 7
-  patch_size: 4
   num_heads: 12
+  patch_size: 4
+nerf:
+  model: myvanillanerf
 simplenet:
   input_features: 784
   model: TwoLayerMLP

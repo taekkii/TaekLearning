@@ -1,3 +1,13 @@
+lego400:
+  name: posedimg
+  path_dir: /home/jeongtaekoh/dataset/lego_downscale/lego400
+  transform: totensor
+
+lego400_cuda:
+  name: posedimg
+  path_dir: /home/jeongtaekoh/dataset/lego_downscale/lego400
+  
+
 mnist:
   name: MNIST
   transform: basic

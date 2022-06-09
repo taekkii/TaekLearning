@@ -1,7 +1,9 @@
 {
     "device":[
-        "cuda",
-        "cuda:0",
+        "cuda:4",
+        "cuda:5",
+        "cuda:6",
+        "cuda:7",
         "cpu"
     ],
     "random_seed":987,

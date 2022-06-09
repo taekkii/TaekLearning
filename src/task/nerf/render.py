@@ -5,6 +5,8 @@ import torch.nn as nn
 
 from typing import Union, Optional
 
+import utils.debug as dbg
+
 
 def distribute_by_sample( n:int , x:torch.Tensor , p_x:torch.Tensor ,eps = 1e-6):
 
@@ -86,14 +88,15 @@ def sample_points( n_samples:int ,
     o,d = ray_origin , ray_direction
     assert o.dim()==d.dim() and o.dim() in [1,2]
     if o.dim() == 1: o,d = o.unsqueeze(0),d.unsqueeze(0)
-    assert o.shape[-1] == d.shape[-1] == 3
+    assert o.shape[-1] == d.shape[-1] == 3 , "o.shape = {} , d.shape={}".format(o.shape,d.shape)
 
     
     n = n_samples
     
-    b,m,_= ray_origin.shape
+    b,_= ray_origin.shape
+
     if t_sample==None:
-        t = torch.linspace(t_near+eps , t_far-eps , n)
+        t = torch.linspace(t_near+eps , t_far-eps , n , device=o.device).view(1,-1).expand([b,-1])
     else:    
         t = distribute_by_sample(n , t_sample , density_t)
     t = t_near  +  (t_far - t_near)*t
@@ -101,11 +104,12 @@ def sample_points( n_samples:int ,
     
     # t[b x n] , o[b x 3] , d[b x 3]
     # want[b x n x 3] : use broadcast rule
+    
     points = o.view(b,1,3) + t.view(b,n,1)*d.view(b,1,3)
     return  points, t
     
     
-def get_rgbsigma(model:nn.Module,points:torch.Tensor,minibatch_size):
+def get_rgbsigma(model:nn.Module,points:torch.Tensor, directions:torch.Tensor, minibatch_size:int):
     """
         run neural network on all points
         ARGUMENTS:
@@ -113,12 +117,14 @@ def get_rgbsigma(model:nn.Module,points:torch.Tensor,minibatch_size):
             points: [#ofpoints x 3] tensor
             minibatch_size: literally minibatch size
         RETURNS: (rgb,sigma) per each points [#ofpoints x 4]
+
+        [Note] Why need this?
+            # of sample points > # of sample rays, so we have no choice but using "for loop" for now
     """
-    
-    return torch.stack([points[i:i+minibatch_size] for i in range(0 , points.shape[0] , minibatch_size)])
+    return torch.stack([model(points[i:i+minibatch_size],directions[i:i+minibatch_size]) for i in range(0 , points.shape[0] , minibatch_size)])
         
 
-def render(model:nn.Module, ray_origin:torch.Tensor , ray_direction:torch.Tensor , n_samples=128 , minibatch_size=4096):
+def render(model:nn.Module, ray_origin:torch.Tensor , ray_direction:torch.Tensor , n_samples=64 , t_near=1e-8 , t_far=1.0):
     """
     render with one network
     Arguments:
@@ -132,23 +138,29 @@ def render(model:nn.Module, ray_origin:torch.Tensor , ray_direction:torch.Tensor
         (Batch of)RGB of rendered tensor [b x 3]
     """
 
+    
     b = ray_origin.shape[0]
     n = n_samples
 
-    points,t = sample_points(n,ray_origin,ray_direction,None,None) #[b x Nsample x 3]
+    points,t = sample_points(n,ray_origin,ray_direction,None,None,t_near,t_far) #[b x Nsample x 3]
+
+    dbg.stamp("sample_points")
     
-    rgb,sigma = torch.split(get_rgbsigma(model,points.view(-1,3),minibatch_size) , 3 , dim=-1)
+
+    d = ray_direction.view(b,1,3).expand([b,n,3])
+    rgb,sigma = torch.split(get_rgbsigma(model,points.view(-1,3),d.reshape(-1,3),minibatch_size=1<<20) , 3 , dim=-1)
     rgb,sigma = rgb.view(-1,n,3) , sigma.view(-1,n) # rgb:[b x n x 3], sigma[b x n]
     
+    dbg.stamp("run_nerf")
+
     delta = torch.cat( [t[:,0].view(-1,1)  ,  t[ : , 1:] - t[: , :-1] ] , -1) #delta: [b x n]
     seq = sigma*delta #seq:[bxn]
-    cseq = torch.cat( [ torch.ones(b).view(-1,1) , seq.cumsum(dim=-1)[ : , :-1] ] , -1) #cseq : [bxn]
+    cseq = torch.cat( [ torch.ones(b,device=seq.device).view(-1,1) , seq.cumsum(dim=-1)[ : , :-1] ] , -1) #cseq : [bxn]
     T = torch.exp(-cseq) # T[bxn]
     alpha = torch.ones_like(seq) - torch.exp(-seq) # alpha[bxn]
     res = (T*alpha*rgb.permute([2,0,1])).sum(dim=-1) #[bxn] * [bxn] * [3xbxn] = [3xbxn]. [3xbxn].sum(dim=-1) -> [3xb]
+
+    dbg.stamp("integral_rgb")    
     
     return res.t() #[bx3]
-
-    
-
 

@@ -13,7 +13,8 @@ def pos_enc(point:torch.Tensor , length:int):
     
 
     p,L = point,length
-    
+    device = p.device
+
     if p.dim()==1: p = p.unsqueze(0)
     b,ch = p.shape
    
@@ -21,13 +22,12 @@ def pos_enc(point:torch.Tensor , length:int):
     assert p.dim()==2 
 
     # geo_seq: [L]
-    geo_seq = torch.exp2( torch.arange(L) ) * torch.pi 
-
+    geo_seq = ( torch.exp2( torch.arange(L,device=device) ) * torch.pi )
     # seq: [b x 1 x c]*[L x 1] = [b x L X c] --(view)-->[b x (Lc)]
     seq = ( p.unsqueeze(1) * geo_seq.unsqueeze(1) ).view(b,-1)
     
     # enc: [b x (2Lc)]
-    enc = torch.zeros(b , seq.shape[-1]*2 )
+    enc = torch.zeros(b , seq.shape[-1]*2 ,device=device)
     enc[:,0::2] = torch.sin(seq)
     enc[:,1::2] = torch.cos(seq)
     
@@ -73,7 +73,6 @@ class NeRF(nn.Module):
         posenc_x = pos_enc(x , self.Lx)
         posenc_d = pos_enc(d , self.Ld)
         
-
         out = self.nonlinear( self.layer0(posenc_x) )
         for layer in self.layers:
             if layer.is_skip_layer:
@@ -88,13 +87,19 @@ class NeRF(nn.Module):
         
         rgb = self.layer3(out)
 
-        return torch.cat([rgb,sigma],-1)
+        return torch.sigmoid( torch.cat([rgb,sigma],-1) )
 
 
-if __name__ == '__main__':
-     x = torch.randn(9,3)
-     d = torch.randn(9,3)
-     net = NeRF()
-     net(x,d)
+# if __name__ == '__main__':
+#     device="cuda:6"
+#     x = torch.randn(4096*64,3).to(device)
+#     d = torch.randn(4096*64,3).to(device)
+    
+#     import time
+#     t0=time.time()
 
 
+#     net = NeRF().to(device)
+#     net(x,d)
+
+#     print(f"{time.time()-t0:.3f}s")

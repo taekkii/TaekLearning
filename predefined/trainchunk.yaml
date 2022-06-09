@@ -1,9 +1,15 @@
 basic: {}
+nerfchunk:
+  lr: 0.0005
+  lr_scheduler: CosineOneCycle
+  net: nerf
+  optimizer: Adam
+  warmup: 100
 transformer_train:
+  grad_clip: 1.0
   lr: 0.001
   lr_scheduler: CosineOneCycle
   net: net
   optimizer: AdamW
   warmup: 5
   weight_decay: 0.1
-  grad_clip: 1.0

@@ -53,7 +53,6 @@ def summary_available_settings():
 
 def main():
     arg = utils.argument.get_args()
-
     
     if arg['predefine_save']:
         record_predefine(arg['dataset'],'dataset')
@@ -73,7 +72,8 @@ def main():
     #-----[RANDOM_SEED]-----#
     random_seed = utils.config.get("random_seed")
     torch.manual_seed( random_seed )
-    if 'cuda' in arg['device']: torch.cuda.manual_seed( random_seed )
+    if 'cuda' in arg['device']: 
+        torch.cuda.manual_seed( random_seed )
 
 
     utils.prepare.prepare_dataset(arg)
