@@ -5,6 +5,16 @@ nerfchunk:
   net: nerf
   optimizer: Adam
   warmup: 100
+nerfchunk_c:
+  lr: 0.0005
+  lr_scheduler: CosineOneCycle
+  net: nerf_c
+  optimizer: Adam
+nerfchunk_f:
+  lr: 0.0005
+  lr_scheduler: CosineOneCycle
+  net: nerf_f
+  optimizer: Adam
 transformer_train:
   grad_clip: 1.0
   lr: 0.001

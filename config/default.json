@@ -4,6 +4,7 @@
         "cuda:5",
         "cuda:6",
         "cuda:7",
+        "cuda",
         "cpu"
     ],
     "random_seed":987,

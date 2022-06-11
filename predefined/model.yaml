@@ -9,7 +9,14 @@ light_transformer:
   patch_size: 4
 nerf:
   model: myvanillanerf
+nerfnoposenc:
+  model: myvanillanerf
+  posenc_Lx: 0
+  posenc_Ld: 0 
 simplenet:
   input_features: 784
   model: TwoLayerMLP
   output_features: 10
+nerfy:
+  model: yenchenlinnerf
+  

@@ -11,30 +11,52 @@ from visdom import Visdom
 from task.nerf.ray import get_batch_rays, get_rays
 from task.nerf.utils import get_intrinsic
 
+from model.myvanillanerf import NeRF as MyNeRF
+from model.yenchenlinnerf import NeRF as YenNeRF
+from model.myvanillanerf.main import pos_enc
 
-class MyDataset(Dataset):
-    def __init__(self,device):
-        super().__init__()
+from task.nerf.render import integral_rgb
 
-        self.device=device
-        self.x = torch.randn(50000,10000 , device=self.device)
-        self.x.requires_grad=False
 
-    def __getitem__(self, index):
-        return self.x[index]
+if __name__=='__main__':
+    c = torch.tensor([[[1,0,0],[0,1,0],[0,0,1]],[[1,0,0],[0,1,0],[0,0,1]]]).float()
+    t = torch.tensor([[1,2,3],[1,2,3]]).float()
+    sigma=torch.tensor([[0.0,0.0,1.0] , [1.,1.,1.]])
+
+    rgb,_ = integral_rgb(c,sigma,t)
+    print(rgb)
+
+
+# output_m = mynerf(x,d)
+# output_y = yennerf(x,d)
+
+# print(output_m.mean())
+# print(output_y.mean())
+
+
+# class MyDataset(Dataset):
+#     def __init__(self,device):
+#         super().__init__()
+
+#         self.device=device
+#         self.x = torch.randn(50000,10000 , device=self.device)
+#         self.x.requires_grad=False
+
+#     def __getitem__(self, index):
+#         return self.x[index]
     
-    def __len__(self):
-        return 50000
+#     def __len__(self):
+#         return 50000
 
-import time
-dset = MyDataset('cuda:5')
-loader = DataLoader(dset,batch_size=64,shuffle=True,num_workers=0)
-t0 = time.time()
-for batch_data in loader:
-    y=2*batch_data
+# import time
+# dset = MyDataset('cuda:5')
+# loader = DataLoader(dset,batch_size=64,shuffle=True,num_workers=0)
+# t0 = time.time()
+# for batch_data in loader:
+#     y=2*batch_data
     
 
-print(time.time()-t0)
+# print(time.time()-t0)
 
 # lego_dset = PosedImage("/home/jeongtaekoh/dataset/lego_downscale/lego200" , transforms=torchvision.transforms.ToTensor() ,metadata_filename="transforms_train")
 

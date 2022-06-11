@@ -1,0 +1,1 @@
+python ./src/main.py nerf --device cuda -e normal --dataset "lego400 config=lego400_cuda load_device=cuda" --model "nerf_c config=nerf" "nerf_f config=nerf" --trainchunk "config=nerfchunk_c" "config=nerfchunk_f" --t-near 2.0 --t-far 6.0 --iter 200000 --batch-size 1 --n-samples 256 --n-samples-fine 0 --ray-batch-size 1024

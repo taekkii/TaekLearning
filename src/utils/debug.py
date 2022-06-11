@@ -1,12 +1,18 @@
 
 
 import time
+import torch
 
 last_timestamp = None
 debug_mode = False
 overhead_dict = {}
 wait_iter = 0
 
+def mem(caption=""):
+    global debug_mode
+    #if not debug_mode:return
+    if not torch.cuda.is_available():return
+    print(f"({caption:^15}){torch.cuda.memory_allocated()//(1024*1024) : 7.2f}MB")
 
 def stamp(caption:str="" , verbose=False):
     global last_timestamp, debug_mode , overhead_dict
@@ -65,7 +71,6 @@ def wait(cycle=1):
 def on():
     global debug_mode
     debug_mode=True
-    stamp()
 
 def off():
     global debug_mode

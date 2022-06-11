@@ -93,11 +93,9 @@ class Trainer:
                 loss = obj_func(output)
             return output,loss
 
-        def backward(self,loss,optimizer_step=True,lr_scheduler_step=True):
+        def step(self,optimizer_step=True,lr_scheduler_step=True):
             assert hasattr(self,'net') , "Configure your model by calling config_network() first."
             assert hasattr(self,'optimizer') , 'config your optimizer(and possibly LR scheduler) by calling config_optimizer first.'
-            
-            loss.backward()
             
             if 'grad_clip' in self.hyperparam:
                 torch.nn.utils.clip_grad_norm_(self.net.parameters(),self.hyperparam['grad_clip'])
@@ -292,22 +290,18 @@ class Trainer:
         pass
     
     def run(self):
-        
 
         for data in tqdm( self.get_data(exception_keys=TEST_DATASET_KEYWORDS) , 
                           desc="Training Process", mininterval=TQDM_MININTERVAL , 
                           total=self.settings['iter'],initial = self.it-1):
-            
-            self.step(data)
 
+            self.step(data)
             for addon in self.addons:
                 addon(self.it)
-            
             
             #-----[Iterate one step]-----#
             self.record("iter",self.it)
             self.it+=1
-
             if self.it > self.settings['iter']:
                 break
     

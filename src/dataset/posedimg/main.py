@@ -12,7 +12,7 @@ import torchvision.transforms
 import torchvision.datasets.folder
 
 from typing import Optional,Callable
-
+import tqdm
 
 DEFAULT_BLENDER_JSON_FILENAME = "transforms"
  
@@ -93,7 +93,7 @@ class PosedImage(Dataset):
             print("[WARNING] If size of images are large, loading dataset to gpu is heavily depreciated!!\n")
             
             imgs = []
-            for image_path in self.image_paths:
+            for image_path in tqdm.tqdm(self.image_paths):
                 img = torchvision.datasets.folder.default_loader(path=image_path)
                 img = torchvision.transforms.ToTensor()(img)
                 imgs.append(img)
