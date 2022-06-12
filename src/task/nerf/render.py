@@ -8,7 +8,7 @@ from typing import Union, Optional
 import utils.debug as dbg
 from . import ray
 import tqdm
-@torch.no_grad()
+
 def distribute_by_sample( n:int , p_x:torch.Tensor ,eps=1e-6):
 
     """
@@ -45,7 +45,6 @@ def distribute_by_sample( n:int , p_x:torch.Tensor ,eps=1e-6):
     return ret
 
 
-@torch.no_grad()
 def sample_points( n_samples:int , 
                    ray_origin: torch.Tensor , 
                    ray_direction:torch.Tensor , 
@@ -64,6 +63,7 @@ def sample_points( n_samples:int ,
             (batch of) direction of rays[3] OR [B x 3]
         density_t:
             density given t~U(0,1), sampled [n_sample] times.
+    
         t_near/t_far: 
             lower/upper bound of t, where a single ray is represented by x=o+td
         
@@ -124,6 +124,7 @@ def integral_rgb(rgb,sigma,t):
         rgb_map: [#rays x 3]  rendered rgb values per rays.
         weight : [#rays x #points/ray] cumulative weight per each point samples
     """
+    
     b,n,_ = rgb.shape
     device = rgb.device
 
@@ -134,6 +135,7 @@ def integral_rgb(rgb,sigma,t):
     T = torch.cumprod(  torch.cat([ torch.ones(b,1,device=device) , (1.-alpha + 1e-6)[:,:-1] ] ,-1) , dim=-1 ) #T(roughly,=cumprod(1-alpha)) :[b x n]
     weight = alpha*T # weight: [bxn]
 
+  #  import pdb;pdb.set_trace()
     res = (weight.view(b,n,1) * rgb).sum(dim=-2) #[bxnx1] * [bxnx3] = [bxnx3]. [bxnx3].sum(dim=-2) -> [bx3]
     return res,weight
 
@@ -257,21 +259,23 @@ def render( model_coarse:nn.Module,
 
     rgb_map_c,weight_c = integral_rgb(rgb_c,sigma_c,t_c)  #[bx3]
     #rgb_map_c,weight_c = raw2outputs(rgb_c,sigma_c,t_c,ray_d)
-  
+ 
+ 
     if model_fine is None or n_samples_fine<=0:
         if coarse_ratio is None: return rgb_map_c,None
         else: return rgb_map_c
-    #==== [FINE] ====#
-    points_f,t_f = sample_points(n_f , ray_o , ray_d , 
+    # #==== [FINE] ====#
+    _,t_weighted = sample_points(n_f , ray_o , ray_d , 
                                  density_t=weight_c.detach(),
                                  t_near=t_near,
                                  t_far=t_far) #[b x Nsample x 3]
-    # t_f,_ = sample_pdf( (t_c[:,1:] + t_c[:,:-1])*.5,weight_c[...,1:-1].detach(),n_f).sort()
-    # points_f = ray_o.view(b,1,3) + t_f.view(b,n_f,1)*ray_d.view(b,1,3)
-    # #import pdb;pdb.set_trace()
-    points_f,_ = torch.cat([points_c,points_f],dim=-2).sort()
-    t_f,_      = torch.cat([t_c,t_f],dim=-1).sort()
+    
+    #t_weighted,_ = sample_pdf( (t_c[:,1:] + t_c[:,:-1])*.5,weight_c[...,1:-1].detach(),n_f).sort()
+    t_f,_ = torch.cat([t_c,t_weighted],-1).sort() #t_f[b x (nc+nf)]
     n_f += n_c
+    points_f = ray_o.view(b,1,3) + t_f.view(b,n_f,1)*ray_d.view(b,1,3)
+    # #import pdb;pdb.set_trace()
+    
 
     rgb_f,sigma_f = torch.split(get_rgbsigma(model_fine,points_f.view(-1,3),ray_d.view(b,1,3).expand([b,n_f,3]).reshape(-1,3)) , 3 , dim=-1)
     rgb_f,sigma_f = rgb_f.view(-1,n_f,3) , sigma_f.view(-1,n_f) # rgb:[b x n x 3], sigma[b x n]
@@ -301,6 +305,10 @@ def render_full_image( model_coarse:nn.Module,
     rays_o,rays_d  = ray.get_rays(h,w,K,pose)
     rays_o, rays_d = rays_o.reshape(-1,3) , rays_d.reshape(-1,3)
     rgbs = []
+
+    model_coarse.eval()
+    if model_fine:model_fine.eval()
+
     with torch.no_grad():     
         for i in tqdm.trange(0,rays_o.shape[0],ray_batch_size):
             rgb = render(model_coarse=model_coarse,

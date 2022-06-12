@@ -11,9 +11,9 @@ from typing import Optional , Callable
 import utils.debug as dbg
 
 def squared_error(c_gt,c_render):
+    
     return ((c_gt-c_render)**2).mean()
 
-@torch.no_grad()
 def psnr(mse):
     return -10. * torch.log(mse) / torch.log(10.*torch.ones(1,device=mse.device) )
 
@@ -53,14 +53,19 @@ class NeRFTrainer(trainer.Trainer):
         
         self.trainchunk_c = self.trainchunks[0]
         self.trainchunk_f = None if len(self.trainchunks)<=1 else self.trainchunks[1]
-        self.loss_sum=0
 
+        self.net_c = self.trainchunk_c.net
+        self.net_f = None if self.trainchunk_f is None else self.trainchunk_f.net
         
+        
+    
     #override
     def step(self,data):
         
         dbg.stamp('data_load')
         
+        self.net_c.train()
+        if self.net_f: self.net_f.train()
 
         gt_imgs,poses,fovx = data
         fovx = fovx[0]
@@ -86,52 +91,60 @@ class NeRFTrainer(trainer.Trainer):
         rays_o, rays_d = rays_o.reshape(-1,3) , rays_d.reshape(-1,3)
         rays_o, rays_d, gt_rgbs = random_sample_rays(rays_o , rays_d, self.ray_batch_size,gt_rgb=gt_rgbs) 
         dbg.stamp("data_prepare")
-
-        rgbs_c,rgbs_f = render.render(model_coarse = self.trainchunk_c.net,
-                                      model_fine = self.trainchunk_f.net,
+        rgbs_c,rgbs_f = render.render(model_coarse = self.net_c,
+                                      model_fine = self.net_f,
                                       ray_o = rays_o,
                                       ray_d = rays_d,
                                       n_samples_coarse = self.n_samples,
                                       n_samples_fine   = self.n_samples_fine,
                                       t_near = self.t_near,
                                       t_far  = self.t_far)
-        if rgbs_f is None: loss = squared_error(gt_rgbs , rgbs_c) 
-        else             : loss = squared_error(gt_rgbs , rgbs_c) + squared_error(gt_rgbs,rgbs_f)
-    
+        if rgbs_f is None:
+            loss = squared_error(gt_rgbs , rgbs_c) 
+            psnr_it = psnr(loss).item()
+        else:
+            loss = squared_error(gt_rgbs , rgbs_c) + squared_error(gt_rgbs,rgbs_f)
+            psnr_it = psnr(squared_error(gt_rgbs,rgbs_f.detach())).item()
+       
         loss.backward()
+    
+        # if self.it%1==0:
+            
+        #     for name,param in self.net_c.named_parameters():
+        #         if param.grad.norm()>0.0:
+        #             print("[{}]".format(name))
+        #             print(param.grad.norm().item())
         for tc in self.trainchunks:tc.step()
         
         dbg.stamp('backward')
 
-        mse = loss.detach()
-        self.record("loss",mse)
-        self.record("psnr",psnr(mse).detach())
+        self.record("loss",loss.item())
+        self.record("psnr",psnr_it)
         self.record('lr',self.trainchunk_c.get_lr())
        
         dbg.stamp('record')
         dbg.wait(10)
 
         
-        #temporary
-        self.loss_sum+=loss.item()
         if self.it%50 == 0:
-            import tqdm
-            print(f"[TRAIN] Iter: {self.it} Loss: {self.loss_sum/50}  PSNR: {psnr(torch.tensor(self.loss_sum/50)).item()}")
-            self.loss_sum=0
+            print(f"\n[TRAIN] Iter: {self.it} Loss: {sum(self.history['loss'][-50:])/50:8.5f}  PSNR: {sum(self.history['psnr'][-50:])/50:8.5f}")
+            
+     
         #tmp_validate
         if self.it % self.settings['i_validation'] == 0:
             v = self.visualizer.visdom
-            print("[Validate] it={}".format(self.it))
-           
+            print("\n[Validate] it={}".format(self.it))
             
-            rgbs = render.render_full_image(self.trainchunk_c.net,
-                                            self.trainchunk_f.net,
+            
+            rgbs = render.render_full_image(self.net_c,
+                                            self.net_f,
                                             h,w,K,poses[0],
                                             n_samples_coarse = self.n_samples,
                                             n_samples_fine   = self.n_samples_fine,
                                             t_near = self.t_near,
                                             t_far  = self.t_far)
-            v.images(torch.stack([rgbs,gt_imgs[0]]),win=f"validate:{self.it}",env=self.settings['experiment_name'])
+            v.images(torch.stack([rgbs,gt_imgs[0]]),win=f"validate",env=self.settings['experiment_name'])
+            print(f"[VALIDATE] PSNR: {psnr(squared_error(gt_imgs[0],rgbs) ).item():8.5f}")
             print()
         
     

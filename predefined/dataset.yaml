@@ -6,7 +6,7 @@ lego400:
 lego400_cuda:
   name: posedimg
   path_dir: /home/jeongtaekoh/dataset/lego_downscale/lego400
-  
+  load_device: cuda
 
 mnist:
   name: MNIST
