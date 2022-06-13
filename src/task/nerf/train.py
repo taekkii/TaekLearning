@@ -11,11 +11,13 @@ from typing import Optional , Callable
 import utils.debug as dbg
 
 def squared_error(c_gt,c_render):
-    
     return ((c_gt-c_render)**2).mean()
+
 
 def psnr(mse):
     return -10. * torch.log(mse) / torch.log(10.*torch.ones(1,device=mse.device) )
+
+
 
 def random_sample_rays(rays_o:torch.Tensor , rays_d:torch.Tensor,batch_size:int,gt_rgb:Optional[torch.Tensor] = None):
     
@@ -56,6 +58,8 @@ class NeRFTrainer(trainer.Trainer):
 
         self.net_c = self.trainchunk_c.net
         self.net_f = None if self.trainchunk_f is None else self.trainchunk_f.net
+        
+        self.add_on(self.summary,cycle=self.settings['i_summary'])
         
         
     
@@ -124,11 +128,7 @@ class NeRFTrainer(trainer.Trainer):
        
         dbg.stamp('record')
         dbg.wait(10)
-
         
-        if self.it%50 == 0:
-            print(f"\n[TRAIN] Iter: {self.it} Loss: {sum(self.history['loss'][-50:])/50:8.5f}  PSNR: {sum(self.history['psnr'][-50:])/50:8.5f}")
-            
      
         #tmp_validate
         if self.it % self.settings['i_validation'] == 0:
@@ -147,7 +147,9 @@ class NeRFTrainer(trainer.Trainer):
             print(f"[VALIDATE] PSNR: {psnr(squared_error(gt_imgs[0],rgbs) ).item():8.5f}")
             print()
         
-    
+    def summary(self):
+        print(f"\n[TRAIN] Iter: {self.it} Loss: {sum(self.history['loss'][-50:])/50:8.5f}  PSNR: {sum(self.history['psnr'][-50:])/50:8.5f}")
+
     def validate(self):
         pass
     

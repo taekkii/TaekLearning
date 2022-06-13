@@ -82,10 +82,11 @@ def prepare_model(args:dict):
             load_path = parsed['load']
             sdict = torch.load(load_path)
             try:
-                if "IS_TAEKLEARNING_CHECKPOINT" in sdict:
-                    result_dict[net_name].load(sdict['MODEL_'+net_name])
+                if "TAEKLEARNING_CHECKPOINT" in sdict:
+                    print("[TAEKLEARNING_CHECKPOINT] Decected")
+                    result_dict[net_name].load_state_dict(sdict['MODEL_'+net_name])
                 else:   
-                    result_dict[net_name].load(sdict)
+                    result_dict[net_name].load_state_dict(sdict)
             except Exception as e:
                 print(f"Load Failed for [{net_name}]\n")
                 print(e)

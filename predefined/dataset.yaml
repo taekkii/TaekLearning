@@ -8,6 +8,18 @@ lego400_cuda:
   path_dir: /home/jeongtaekoh/dataset/lego_downscale/lego400
   load_device: cuda
 
+lego200_cuda:
+  name: posedimg
+  path_dir: /home/jeongtaekoh/dataset/lego_downscale/lego200
+  load_device: cuda
+  metadata_filename: transforms_train
+
+lego800_1img_cuda:
+  name: posedimg
+  path_dir: /home/jeongtaekoh/dataset/lego_downscale/lego800
+  load_device: cuda
+  metadata_filename: transforms_train
+
 mnist:
   name: MNIST
   transform: basic

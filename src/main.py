@@ -13,7 +13,7 @@ import torch
 import dataset
 import model
 import task
-
+import os
 
 def record_predefine(target_list:list,save_filename:str):
     
@@ -86,8 +86,12 @@ def main():
 
     if arg['save']:
         for model_name , net in arg['model'].items():
-            path = f"{utils.config.get('save_path')}/{arg['experiment_name']}_{model_name}.pth"
-            torch.save(net,path)
+            path = utils.config.get('save_path')
+            utils.system.prepare_dir(path)
+            file_path = os.path.join(f"{arg['experiment_name']}_{model_name}.pth")
+            
+            torch.save(net,file_path)
+            print(f'[SAVED MODEL] to {file_path}')
     
 if __name__ == "__main__":
     main()

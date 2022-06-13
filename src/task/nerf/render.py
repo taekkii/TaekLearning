@@ -8,6 +8,8 @@ from typing import Union, Optional
 import utils.debug as dbg
 from . import ray
 import tqdm
+from .yenchenlinutils import raw2outputs
+from .yenchenlinutils import sample_pdf
 
 def distribute_by_sample( n:int , p_x:torch.Tensor ,eps=1e-6):
 
@@ -139,73 +141,15 @@ def integral_rgb(rgb,sigma,t):
     res = (weight.view(b,n,1) * rgb).sum(dim=-2) #[bxnx1] * [bxnx3] = [bxnx3]. [bxnx3].sum(dim=-2) -> [bx3]
     return res,weight
 
-# [credit]yenchenlin nerf-pytorch
-# Hierarchical sampling (section 5.2)
-def sample_pdf(bins, weights, N_samples, det=False):
-    # Get pdf
-    device=bins.device
-
-    weights = weights + 1e-5 # prevent nans
-    pdf = weights / torch.sum(weights, -1, keepdim=True)
-    cdf = torch.cumsum(pdf, -1)
-    cdf = torch.cat([torch.zeros_like(cdf[...,:1]), cdf], -1)  # (batch, len(bins))
-
-    # Take uniform samples
-    if det:
-        u = torch.linspace(0., 1., steps=N_samples,device=device)
-        u = u.expand(list(cdf.shape[:-1]) + [N_samples])
-    else:
-        u = torch.rand(list(cdf.shape[:-1]) + [N_samples],device=device)
-
-   
-
-    # Invert CDF
-    u = u.contiguous()
-    inds = torch.searchsorted(cdf, u, right=True)
-    below = torch.max(torch.zeros_like(inds-1), inds-1)
-    above = torch.min((cdf.shape[-1]-1) * torch.ones_like(inds), inds)
-    inds_g = torch.stack([below, above], -1)  # (batch, N_samples, 2)
-
-    # cdf_g = tf.gather(cdf, inds_g, axis=-1, batch_dims=len(inds_g.shape)-2)
-    # bins_g = tf.gather(bins, inds_g, axis=-1, batch_dims=len(inds_g.shape)-2)
-    matched_shape = [inds_g.shape[0], inds_g.shape[1], cdf.shape[-1]]
-    cdf_g = torch.gather(cdf.unsqueeze(1).expand(matched_shape), 2, inds_g)
-    bins_g = torch.gather(bins.unsqueeze(1).expand(matched_shape), 2, inds_g)
-
-    denom = (cdf_g[...,1]-cdf_g[...,0])
-    denom = torch.where(denom<1e-5, torch.ones_like(denom), denom)
-    t = (u-cdf_g[...,0])/denom
-    samples = bins_g[...,0] + t * (bins_g[...,1]-bins_g[...,0])
-
-    return samples
-# [credit]yenchenlin nerf-pytorch
-def raw2outputs(rgb,sigma, z_vals, rays_d):
-    """Transforms model's predictions to semantically meaningful values.
-    Args:
-        raw: [num_rays, num_samples along ray, 4]. Prediction from model.
-        z_vals: [num_rays, num_samples along ray]. Integration time.
-        rays_d: [num_rays, 3]. Direction of each ray.
-    Returns:
-        rgb_map: [num_rays, 3]. Estimated RGB color of a ray.
-        disp_map: [num_rays]. Disparity map. Inverse of depth map.
-        acc_map: [num_rays]. Sum of weights along each ray.
-        weights: [num_rays, num_samples]. Weights assigned to each sampled color.
-        depth_map: [num_rays]. Estimated distance to object.
+def rgbmap_clamp(rgb:torch.Tensor , tolerate = 1e-3):
     """
-    raw2alpha = lambda raw, dists: 1.-torch.exp(-raw*dists)
-    device=rgb.device
-    b,n,_ = rgb.shape
-    dists = z_vals[...,1:] - z_vals[...,:-1]
-    dists = torch.cat([dists, torch.ones(b,1,device=device)*1e10 ], -1)  # [N_rays, N_samples]
-    dists = dists * torch.norm(rays_d[...,None,:], dim=-1)
-  
-    alpha = raw2alpha(sigma , dists)  # [N_rays, N_samples]
-    weights = alpha * torch.cumprod(torch.cat([torch.ones((alpha.shape[0], 1),device=device), 1.-alpha + 1e-10], -1), -1)[:, :-1]
-   
-    rgb_map = torch.sum(weights[...,None] * rgb, -2)  # [N_rays, 3]
-
-
-    return rgb_map,weights
+    Clamp rgb val to be ranging in [0,1]
+    Needed because of adding small epsilon values during calculating alpha transparency, which results in
+    'sum of alpha weights' is little bit larger than 1.0
+    Doesn't tolerate large gap error.(>1e-3 default)
+    """
+    assert -tolerate<=rgb.min() and rgb.max() <= 1. + tolerate , f"min={rgb.min()} , max={rgb.max()}"
+    return rgb.clamp(0.0,1.0)
 
 def render( model_coarse:nn.Module,
             model_fine:Optional[nn.Module],
@@ -259,18 +203,18 @@ def render( model_coarse:nn.Module,
 
     rgb_map_c,weight_c = integral_rgb(rgb_c,sigma_c,t_c)  #[bx3]
     #rgb_map_c,weight_c = raw2outputs(rgb_c,sigma_c,t_c,ray_d)
- 
+    rgb_map_c = rgbmap_clamp(rgb_map_c)
  
     if model_fine is None or n_samples_fine<=0:
         if coarse_ratio is None: return rgb_map_c,None
         else: return rgb_map_c
     # #==== [FINE] ====#
-    _,t_weighted = sample_points(n_f , ray_o , ray_d , 
-                                 density_t=weight_c.detach(),
-                                 t_near=t_near,
-                                 t_far=t_far) #[b x Nsample x 3]
+    # _,t_weighted = sample_points(n_f , ray_o , ray_d , 
+    #                              density_t=weight_c.detach(),
+    #                              t_near=t_near,
+    #                              t_far=t_far) #[b x Nsample x 3]
     
-    #t_weighted,_ = sample_pdf( (t_c[:,1:] + t_c[:,:-1])*.5,weight_c[...,1:-1].detach(),n_f).sort()
+    t_weighted,_ = sample_pdf( (t_c[:,1:] + t_c[:,:-1])*.5,weight_c[...,1:-1].detach(),n_f).sort()
     t_f,_ = torch.cat([t_c,t_weighted],-1).sort() #t_f[b x (nc+nf)]
     n_f += n_c
     points_f = ray_o.view(b,1,3) + t_f.view(b,n_f,1)*ray_d.view(b,1,3)
@@ -284,13 +228,13 @@ def render( model_coarse:nn.Module,
 
 
     rgb_map_f,weight_f = integral_rgb(rgb_f,sigma_f,t_f)  #[bx3]
-    
+    rgb_map_f = rgbmap_clamp(rgb_map_f)
     
     if coarse_ratio is None: return rgb_map_c , rgb_map_f
 
     rgb_final = coarse_ratio * rgb_map_c + (1.0-coarse_ratio) * rgb_map_f
-    assert 0<=rgb_final.min() and rgb_final.max() <= 1.0 , f"min={rgb_final.min()} , max={rgb_final.max()}"
-    return rgb_final
+    assert -0.001<=rgb_final.min() and rgb_final.max() <= 1.001 , f"min={rgb_final.min()} , max={rgb_final.max()}"
+    return rgb_final.clamp(0.0,1.0)
 
 def render_full_image( model_coarse:nn.Module,
                        model_fine:Optional[nn.Module],

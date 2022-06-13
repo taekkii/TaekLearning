@@ -156,7 +156,8 @@ class Trainer:
             
             if self.min_interval is not None  and  time.time() - self.t0 <= self.min_interval:
                 return
-            
+            if self.cycle==0:
+                return
             self.t0 = time.time()
             
             if iter % self.cycle == 0:

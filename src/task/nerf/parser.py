@@ -16,9 +16,17 @@ def set_parser(cls,parser:argparse.ArgumentParser):
     parser.add_argument('--n-samples',type=int,default=64,help='Number of sample points/ray. In coarse-to-fine scenario, this is # of samples for coarse network')
     parser.add_argument('--n-samples-fine',type=int,default=0,help='Number of sample points/ray for a fine network. If >0, need 2 model configuration, '+
                                                                    'named nerf_c/nerf_f, + 2 trainchunks each')
-    parser.add_argument('--coarse-ratio' , type=float,default=0.5,help='Coarse-fine ratio when integrating final rgb.'+
+    parser.add_argument('--coarse-ratio' , type=float,default=0.01,help='Coarse-fine ratio when integrating final rgb.'+
                                                                        ' i.e. rgb_final=[COARSE-RATIO]*rgb_coarse + (1-[COARSE-RATIO])*rgb_fine. Should range in 0~1')
     parser.add_argument('--center-crop-iteration','-cci', type=int,default=0,help='center crop iteration')
-    parser.add_argument('--i-validation',type=int,default=500,help='Cycle of validation')
     
+    
+    parser.add_argument('--i-validation',type=int,default=500,help='Cycle of validation. Renders one of the viewpoints from validation set.')
+    parser.add_argument('--i-summary',type=int,default=50,help='Cycle for printing training detail.')
+    parser.add_argument('--i-video'  ,type=int,default=0 ,help='Cycle of video recording. Record a view taken from novel views. '+
+                                                               'Location of video: ./videos/[EXPERIMENT_NAME].mp4. '+
+                                                               "[NOTE]: video recording is exactly what the script does at [testing], so"+
+                                                               "only set this when you need an additional video per steps.")
+    
+        
     return parser
