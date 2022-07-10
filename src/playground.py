@@ -1,32 +1,70 @@
 
-from torch.utils.data import Dataset, DataLoader
-import torch
-import numpy as np
-import torchvision.transforms
 
 
-from dataset.posedimg import PosedImage
-from visdom import Visdom
-
-from task.nerf.ray import get_batch_rays, get_rays
-from task.nerf.utils import get_intrinsic
-
-from model.myvanillanerf import NeRF as MyNeRF
-from model.yenchenlinnerf import NeRF as YenNeRF
-from model.myvanillanerf.main import pos_enc
-
-from task.nerf.render import integral_rgb
 
 
-if __name__=='__main__':
-    c = torch.tensor([[[1,0,0],[0,1,0],[0,0,1]],[[1,0,0],[0,1,0],[0,0,1]]]).float()
-    t = torch.tensor([[1,2,3],[1,2,3]]).float()
-    sigma=torch.tensor([[0.0,0.0,1.0] , [1.,1.,1.]])
+import pycolmap
+import pathlib
 
-    rgb,_ = integral_rgb(c,sigma,t)
-    print(rgb)
+output_path = pathlib.Path("/home/jeongtaekoh/TaekLearning/pycolmapoutput")
+image_dir = pathlib.Path("/home/jeongtaekoh/dataset/nerf_synthetic/lego/train")
 
 
+
+output_path.mkdir()
+mvs_path = output_path / "mvs"
+database_path = output_path / "database.db"
+
+pycolmap.extract_features(database_path, image_dir)
+pycolmap.match_exhaustive(database_path)
+maps = pycolmap.incremental_mapping(database_path, image_dir, output_path)
+maps[0].write(output_path)
+pycolmap.undistort_images(mvs_path, output_path, image_dir)
+pycolmap.patch_match_stereo(mvs_path)
+pycolmap.stereo_fusion(mvs_path / "dense.ply", mvs_path)
+
+
+# from torch.utils.data import Dataset, DataLoader
+# import torch
+# import numpy as np
+# import torchvision.transforms
+
+
+# from dataset.posedimg import PosedImage
+# from visdom import Visdom
+
+# from task.nerf.ray import get_batch_rays, get_rays
+# from task.nerf.utils import get_intrinsic
+
+# from model.myvanillanerf import NeRF as MyNeRF
+# from model.yenchenlinnerf import NeRF as YenNeRF
+# from model.myvanillanerf.main import pos_enc
+
+# from task.nerf.render import integral_rgb
+
+
+# import torch.nn.functional as F
+
+
+# if __name__=='__main__':
+
+#     lego_dset = PosedImage("/home/jeongtaekoh/dataset/lego_downscale/lego800" , transform=torchvision.transforms.ToTensor() ,metadata_filename="transforms_train")
+
+#     img = lego_dset[0][0]
+
+#     _,h,w = img.shape
+#     lh = torch.linspace(-1,1,h)
+#     lw = torch.linspace(-1,1,w)
+#     gridx, gridy = torch.meshgrid(lh,lw,indexing='xy')
+
+#     gridx=gridx*0.3
+#     gridy=gridy*0.9
+#     grid=torch.stack((gridx,gridy),2)
+#     grid=grid.unsqueeze(0)
+
+#     warped = F.grid_sample(img.view(1,3,h,w),grid,mode='bilinear',align_corners=False)
+
+#     Visdom().images(torch.stack([img,warped.view(3,h,w)]))
 # output_m = mynerf(x,d)
 # output_y = yennerf(x,d)
 

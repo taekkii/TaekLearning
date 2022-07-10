@@ -19,6 +19,8 @@ class NerfTask(Task):
 
 
     def __call__(self):
+    
+            
         if self.settings['train']:
             t = NeRFTrainer(self.datasets,self.models,self.trainchunks,self.settings)
             t.run()

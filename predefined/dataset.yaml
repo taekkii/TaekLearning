@@ -2,7 +2,16 @@ lego400:
   name: posedimg
   path_dir: /home/jeongtaekoh/dataset/lego_downscale/lego400
   transform: totensor
-
+lego400_skewed:
+  name: skewedposedimg
+  path_dir: /home/jeongtaekoh/dataset/lego_downscale/lego400
+  transform: totensor
+  deviation: 1.0
+lego400_skewed_cuda:
+  name: skewedposedimg
+  path_dir: /home/jeongtaekoh/dataset/lego_downscale/lego400
+  load_device: cuda
+  deviation: 1.0
 lego400_cuda:
   name: posedimg
   path_dir: /home/jeongtaekoh/dataset/lego_downscale/lego400

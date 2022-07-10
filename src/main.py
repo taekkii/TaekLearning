@@ -88,7 +88,7 @@ def main():
         for model_name , net in arg['model'].items():
             path = utils.config.get('save_path')
             utils.system.prepare_dir(path)
-            file_path = os.path.join(f"{arg['experiment_name']}_{model_name}.pth")
+            file_path = os.path.join(path,f"{arg['experiment_name']}_{model_name}.pth")
             
             torch.save(net,file_path)
             print(f'[SAVED MODEL] to {file_path}')

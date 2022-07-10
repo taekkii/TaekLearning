@@ -14,8 +14,8 @@ def set_parser(cls,parser:argparse.ArgumentParser):
                              'Default t_far will be automatically estimated to be 2 x euc_distance(the furthest camera origin), if not specified')
     
     parser.add_argument('--n-samples',type=int,default=64,help='Number of sample points/ray. In coarse-to-fine scenario, this is # of samples for coarse network')
-    parser.add_argument('--n-samples-fine',type=int,default=0,help='Number of sample points/ray for a fine network. If >0, need 2 model configuration, '+
-                                                                   'named nerf_c/nerf_f, + 2 trainchunks each')
+    parser.add_argument('--n-samples-fine',type=int,default=128,help='Number of sample points/ray for a fine network. If >0, need 2 model configuration, '+
+                                                                     'named nerf_c/nerf_f, + 2 trainchunks each')
     parser.add_argument('--coarse-ratio' , type=float,default=0.01,help='Coarse-fine ratio when integrating final rgb.'+
                                                                        ' i.e. rgb_final=[COARSE-RATIO]*rgb_coarse + (1-[COARSE-RATIO])*rgb_fine. Should range in 0~1')
     parser.add_argument('--center-crop-iteration','-cci', type=int,default=0,help='center crop iteration')

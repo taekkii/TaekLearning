@@ -57,4 +57,4 @@ def spherical_record( record_name:str,
         
     imgs=np.stack(imgs,axis=0)
     print(imgs.shape)
-    record(imgs)
+    record(imgs,'record_'+record_name)

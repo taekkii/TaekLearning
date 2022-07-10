@@ -17,6 +17,22 @@ def squared_error(c_gt,c_render):
 def psnr(mse):
     return -10. * torch.log(mse) / torch.log(10.*torch.ones(1,device=mse.device) )
 
+def balanced_mse(y,y_pred,sigma_noise):
+    
+    
+    y_pred = y_pred.view(-1) #[3b]
+    y = y.view(-1)           #[3b]
+
+    tau = 2. * (sigma_noise**2.)
+
+
+    numer = torch.exp( -( (y_pred - y)**2 ) / tau ) # [3b]
+
+    denom = torch.exp( -(y_pred.view(-1,1)-y)**2  / tau ).sum(dim=-1) 
+    loss_vec = -torch.log(numer/denom + 1e-6)
+    
+    
+    return loss_vec.mean()
 
 
 def random_sample_rays(rays_o:torch.Tensor , rays_d:torch.Tensor,batch_size:int,gt_rgb:Optional[torch.Tensor] = None):
@@ -59,9 +75,26 @@ class NeRFTrainer(trainer.Trainer):
         self.net_c = self.trainchunk_c.net
         self.net_f = None if self.trainchunk_f is None else self.trainchunk_f.net
         
+        
         self.add_on(self.summary,cycle=self.settings['i_summary'])
         
-        
+        # Optimization Theory Experiment #
+        self.flag = {}
+        if 'flag' in self.settings and type(self.settings['flag'])==str:
+            import utils.dictionarylike as dictionarylike
+            self.flag = dictionarylike.parse(self.settings['flag'])
+        if 'balance_mse' in self.flag:
+            if self.flag['balance_mse'] == 'train':
+                print("[BALANCED MSE] with trainable parameter")
+                self.sigma_noise = torch.tensor([0.1],device=self.settings['device'],requires_grad=True)
+                self.trainchunk_c.optimizer.add_param_group({"params":self.sigma_noise})
+            else:
+                print("[BALANCED MSE] with sigma_noise={:.3f}".format(self.flag['balance_mse']))
+                self.sigma_noise = torch.tensor([self.flag['balance_mse']],device=self.settings['device'])
+        if self.flag.get('lambda',0) == 'train':
+            print('[WEIGHTED LOSS:TRAINBLE]')
+            self.lam = torch.tensor([1.0],device=self.settings['device'],requires_grad=True)
+            self.trainchunk_c.optimizer.add_param_group({"params":self.lam})
     
     #override
     def step(self,data):
@@ -95,20 +128,50 @@ class NeRFTrainer(trainer.Trainer):
         rays_o, rays_d = rays_o.reshape(-1,3) , rays_d.reshape(-1,3)
         rays_o, rays_d, gt_rgbs = random_sample_rays(rays_o , rays_d, self.ray_batch_size,gt_rgb=gt_rgbs) 
         dbg.stamp("data_prepare")
+
+        if 'center' in self.flag:
+            t_center = (self.t_near+self.t_far)/2
+            beta = self.it / self.settings['iter']
+            t_near = beta*self.t_near + (1. - beta)*t_center
+            t_far  = beta*self.t_far  + (1. - beta)*t_center
+        else:
+            t_near,t_far = self.t_near,self.t_far
         rgbs_c,rgbs_f = render.render(model_coarse = self.net_c,
                                       model_fine = self.net_f,
                                       ray_o = rays_o,
                                       ray_d = rays_d,
                                       n_samples_coarse = self.n_samples,
                                       n_samples_fine   = self.n_samples_fine,
-                                      t_near = self.t_near,
-                                      t_far  = self.t_far)
+                                      t_near = t_near,
+                                      t_far  = t_far)
         if rgbs_f is None:
             loss = squared_error(gt_rgbs , rgbs_c) 
             psnr_it = psnr(loss).item()
         else:
-            loss = squared_error(gt_rgbs , rgbs_c) + squared_error(gt_rgbs,rgbs_f)
-            psnr_it = psnr(squared_error(gt_rgbs,rgbs_f.detach())).item()
+            if 'lambda' in self.flag: lam = self.lam if self.flag['lambda']=='train' else self.flag['lambda']
+            else: lam = 1.0
+            
+            if 'norm' in self.flag: norm=self.flag['norm']
+            else: norm = 2.0
+
+            def loss_fn(x,y,p):
+                numel = x.numel()
+                return ((x-y).norm(p=p)**2) / numel
+
+            if 'iter' in self.flag:
+                ratio = self.it/self.settings['iter']
+                loss = (1. - ratio) * loss_fn(gt_rgbs , rgbs_c,norm) + ratio * lam * loss_fn(gt_rgbs,rgbs_f,norm)
+            elif 'balance_mse' in self.flag:
+            
+
+                loss = balanced_mse(gt_rgbs,rgbs_c,self.sigma_noise) + lam * balanced_mse(gt_rgbs,rgbs_f,self.sigma_noise)
+            else:
+                loss = loss_fn(gt_rgbs , rgbs_c,norm) + lam * loss_fn(gt_rgbs,rgbs_f,norm)
+
+
+            #loss = squared_error(gt_rgbs , rgbs_c) + squared_error(gt_rgbs,rgbs_f)
+            psnr_it = psnr(squared_error(gt_rgbs,rgbs_f.detach())).item() if 'iter' not in self.flag            \
+                else  psnr(squared_error(gt_rgbs,(1. - ratio)*rgbs_c.detach() + ratio * rgbs_f.detach() ) ).item()
        
         loss.backward()
     
@@ -135,20 +198,27 @@ class NeRFTrainer(trainer.Trainer):
             v = self.visualizer.visdom
             print("\n[Validate] it={}".format(self.it))
             
-            
+            ratio = 0.01
+            if 'iter' in self.flag: ratio =  self.it/self.settings['iter']
             rgbs = render.render_full_image(self.net_c,
                                             self.net_f,
                                             h,w,K,poses[0],
                                             n_samples_coarse = self.n_samples,
                                             n_samples_fine   = self.n_samples_fine,
-                                            t_near = self.t_near,
-                                            t_far  = self.t_far)
+                                            t_near = t_near,
+                                            t_far  = t_far,
+                                            coarse_ratio=1.-ratio)
             v.images(torch.stack([rgbs,gt_imgs[0]]),win=f"validate",env=self.settings['experiment_name'])
             print(f"[VALIDATE] PSNR: {psnr(squared_error(gt_imgs[0],rgbs) ).item():8.5f}")
             print()
+           # import pdb;pdb.set_trace()
         
     def summary(self):
         print(f"\n[TRAIN] Iter: {self.it} Loss: {sum(self.history['loss'][-50:])/50:8.5f}  PSNR: {sum(self.history['psnr'][-50:])/50:8.5f}")
+        if 'balance_mse' in self.flag:
+            print(f"[TRAIN] Sigma: {self.sigma_noise.item():8.5f}")
+        if self.flag.get('lambda',0)=='train':
+            print(f"[TRAIN] Lambda: {self.lam.item():8.5f}")
 
     def validate(self):
         pass
